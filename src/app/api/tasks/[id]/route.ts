@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireProjectAccess } from "@/lib/authz";
 import { apiErrorResponse } from "@/lib/api-error";
+import { computeDerivedTaskFields, toDate } from "@/lib/task-update";
 
 const updateSchema = z.object({
   status: z.enum(["BACKLOG", "IN_PROGRESS", "REVIEW", "DONE"]).optional(),
@@ -19,13 +20,6 @@ const updateSchema = z.object({
   actualEnd: z.string().nullable().optional(),
 });
 
-function toDate(value: string | null | undefined) {
-  if (value === undefined) return undefined;
-  if (value === null) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
 export async function PATCH(
   request: Request,
   ctx: RouteContext<"/api/tasks/[id]">,
@@ -36,20 +30,7 @@ export async function PATCH(
     await requireProjectAccess(task.projectId, "EDITOR");
 
     const body = updateSchema.parse(await request.json());
-
-    // Derive actual start/end from status changes so the timeline view has
-    // real data without a separate manual date-entry step: the first time a
-    // task leaves Backlog we stamp actualStart, and the first time it
-    // reaches Done we stamp actualEnd. Explicit values in the request (incl.
-    // null, to clear) always take precedence over this inference.
-    const now = new Date();
-    const shouldAutoStart =
-      body.actualStart === undefined &&
-      body.status !== undefined &&
-      body.status !== "BACKLOG" &&
-      !task.actualStart;
-    const shouldAutoEnd =
-      body.actualEnd === undefined && body.status === "DONE" && !task.actualEnd;
+    const derived = computeDerivedTaskFields(task, body, new Date());
 
     const updated = await prisma.task.update({
       where: { id },
@@ -57,10 +38,7 @@ export async function PATCH(
         ...body,
         plannedStart: toDate(body.plannedStart),
         plannedEnd: toDate(body.plannedEnd),
-        actualStart: shouldAutoStart ? now : toDate(body.actualStart),
-        actualEnd: shouldAutoEnd ? now : toDate(body.actualEnd),
-        percentComplete:
-          body.status === "DONE" ? 100 : body.percentComplete,
+        ...derived,
       },
       include: { assignee: { select: { id: true, name: true, email: true } } },
     });

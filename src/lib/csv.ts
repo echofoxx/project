@@ -70,12 +70,12 @@ export function parseCsv(text: string): CsvRow[] {
   if (!header) return [];
 
   return dataRows.map((cols) => {
-    const record: Partial<CsvRow> = {};
+    const record = Object.fromEntries(CSV_COLUMNS.map((col) => [col, ""])) as CsvRow;
     header.forEach((col, idx) => {
       if ((CSV_COLUMNS as readonly string[]).includes(col)) {
         record[col as (typeof CSV_COLUMNS)[number]] = cols[idx] ?? "";
       }
     });
-    return record as CsvRow;
+    return record;
   });
 }
