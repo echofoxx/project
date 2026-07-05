@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { KeyRound } from "lucide-react";
 
 function FormShell({
   title,
@@ -14,10 +15,15 @@ function FormShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-1 items-center justify-center px-4 py-16">
-      <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
-        <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+    <div className="flex flex-1 items-center justify-center bg-slate-50 px-4 py-16 dark:bg-slate-950">
+      <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
+          <KeyRound className="h-4 w-4" />
+        </div>
+        <h1 className="mt-3 text-xl font-semibold text-slate-900 dark:text-slate-100">
+          {title}
+        </h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
         {children}
       </div>
     </div>
@@ -25,7 +31,8 @@ function FormShell({
 }
 
 const inputClass =
-  "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500";
+const labelClass = "block text-sm font-medium text-slate-700 dark:text-slate-300";
 
 export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +65,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
           });
         }}
       >
-        <label className="block text-sm font-medium text-slate-700">
+        <label className={labelClass}>
           Email
           <input
             name="email"
@@ -68,7 +75,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
             autoComplete="email"
           />
         </label>
-        <label className="block text-sm font-medium text-slate-700">
+        <label className={labelClass}>
           Password
           <input
             name="password"
@@ -78,18 +85,18 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
             autoComplete="current-password"
           />
         </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <button
           type="submit"
           disabled={isPending}
-          className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+          className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-60"
         >
           {isPending ? "Signing in..." : "Sign in"}
         </button>
       </form>
-      <p className="mt-4 text-sm text-slate-500">
+      <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
         No account?{" "}
-        <a href="/sign-up" className="font-medium text-indigo-600">
+        <a href="/sign-up" className="font-medium text-indigo-600 dark:text-indigo-400">
           Create one
         </a>
       </p>
@@ -143,7 +150,7 @@ export function SignUpForm() {
           });
         }}
       >
-        <label className="block text-sm font-medium text-slate-700">
+        <label className={labelClass}>
           Name
           <input
             name="name"
@@ -153,7 +160,7 @@ export function SignUpForm() {
             autoComplete="name"
           />
         </label>
-        <label className="block text-sm font-medium text-slate-700">
+        <label className={labelClass}>
           Email
           <input
             name="email"
@@ -163,7 +170,7 @@ export function SignUpForm() {
             autoComplete="email"
           />
         </label>
-        <label className="block text-sm font-medium text-slate-700">
+        <label className={labelClass}>
           Password
           <input
             name="password"
@@ -173,22 +180,22 @@ export function SignUpForm() {
             className={inputClass}
             autoComplete="new-password"
           />
-          <span className="mt-1 block text-xs text-slate-400">
+          <span className="mt-1 block text-xs text-slate-400 dark:text-slate-500">
             At least 8 characters.
           </span>
         </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <button
           type="submit"
           disabled={isPending}
-          className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+          className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-60"
         >
           {isPending ? "Creating account..." : "Create account"}
         </button>
       </form>
-      <p className="mt-4 text-sm text-slate-500">
+      <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
         Already have an account?{" "}
-        <a href="/sign-in" className="font-medium text-indigo-600">
+        <a href="/sign-in" className="font-medium text-indigo-600 dark:text-indigo-400">
           Sign in
         </a>
       </p>

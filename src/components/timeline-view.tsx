@@ -154,14 +154,14 @@ export function TimelineView({
   }, [phases, taskAnchors]);
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white">
+    <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
       <Legend />
       <div className="overflow-x-auto">
         <div style={{ width: LABEL_WIDTH + chartWidth }}>
           {/* Header */}
-          <div className="sticky top-0 z-20 flex border-b border-slate-200 bg-slate-50">
+          <div className="sticky top-0 z-20 flex border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/50">
             <div
-              className="sticky left-0 z-10 shrink-0 border-r border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-500"
+              className="sticky left-0 z-10 shrink-0 border-r border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400"
               style={{ width: LABEL_WIDTH }}
             >
               Task
@@ -170,7 +170,7 @@ export function TimelineView({
               {weekMarkers.map((m) => (
                 <div
                   key={m.offset}
-                  className="absolute top-0 h-full border-l border-slate-200 pl-1 text-xs text-slate-400"
+                  className="absolute top-0 h-full border-l border-slate-200 pl-1 text-xs text-slate-400 dark:border-slate-800 dark:text-slate-500"
                   style={{ left: m.offset }}
                 >
                   {m.label}
@@ -183,15 +183,15 @@ export function TimelineView({
           <div className="relative">
             {phases.map((phase) => (
               <div key={phase.id}>
-                <div className="flex bg-slate-50/70">
+                <div className="flex bg-slate-50/70 dark:bg-slate-800/30">
                   <div
-                    className="sticky left-0 z-10 shrink-0 truncate border-r border-b border-slate-100 bg-slate-50/70 px-3 text-sm font-semibold text-slate-800"
+                    className="sticky left-0 z-10 shrink-0 truncate border-r border-b border-slate-100 bg-slate-50/70 px-3 text-sm font-semibold text-slate-800 dark:border-slate-800 dark:bg-slate-800/30 dark:text-slate-200"
                     style={{ width: LABEL_WIDTH, height: ROW_HEIGHT, lineHeight: `${ROW_HEIGHT}px` }}
                   >
                     {phase.wbsCode} {phase.name}
                   </div>
                   <div
-                    className="relative border-b border-slate-100"
+                    className="relative border-b border-slate-100 dark:border-slate-800"
                     style={{ width: chartWidth, height: ROW_HEIGHT }}
                   />
                 </div>
@@ -288,16 +288,16 @@ function TimelineRow({
         : "bg-amber-500";
 
   return (
-    <div className="flex hover:bg-slate-50">
+    <div className="flex hover:bg-slate-50 dark:hover:bg-slate-800/40">
       <div
-        className="sticky left-0 z-10 flex shrink-0 items-center gap-1 truncate border-r border-b border-slate-100 bg-white px-3 text-sm text-slate-700"
+        className="sticky left-0 z-10 flex shrink-0 items-center gap-1 truncate border-r border-b border-slate-100 bg-white px-3 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
         style={{ width: LABEL_WIDTH, height: ROW_HEIGHT }}
       >
-        <span className="shrink-0 font-mono text-xs text-slate-400">{task.wbsCode}</span>
+        <span className="shrink-0 font-mono text-xs text-slate-400 dark:text-slate-500">{task.wbsCode}</span>
         <span className="truncate">{task.name}</span>
       </div>
       <div
-        className="relative border-b border-slate-100"
+        className="relative border-b border-slate-100 dark:border-slate-800"
         style={{ width: chartWidth, height: ROW_HEIGHT }}
       >
         {task.isMilestone ? (
@@ -312,7 +312,7 @@ function TimelineRow({
           <>
             {plannedBar && (
               <div
-                className="absolute top-1/2 h-3 -translate-y-1/2 rounded border border-slate-300 bg-slate-100"
+                className="absolute top-1/2 h-3 -translate-y-1/2 rounded border border-slate-300 bg-slate-100 dark:border-slate-600 dark:bg-slate-700"
                 style={{ left: plannedBar.left, width: plannedBar.width }}
                 title={`Planned: ${plannedStart?.toLocaleDateString()} – ${plannedEnd?.toLocaleDateString()}`}
               />
@@ -333,14 +333,14 @@ function TimelineRow({
 
 function Legend() {
   const items = [
-    { swatch: "border border-slate-300 bg-slate-100", label: "Planned" },
+    { swatch: "border border-slate-300 bg-slate-100 dark:border-slate-600 dark:bg-slate-700", label: "Planned" },
     { swatch: "bg-blue-500", label: "In progress, on track" },
     { swatch: "bg-red-500", label: "Behind schedule" },
     { swatch: "bg-emerald-500", label: "Done on time" },
     { swatch: "bg-amber-500", label: "Done late / upcoming milestone" },
   ];
   return (
-    <div className="flex flex-wrap items-center gap-4 border-b border-slate-200 px-3 py-2 text-xs text-slate-500">
+    <div className="flex flex-wrap items-center gap-4 border-b border-slate-200 px-3 py-2 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
       {items.map((item) => (
         <span key={item.label} className="flex items-center gap-1.5">
           <span className={`h-2.5 w-2.5 rounded-sm ${item.swatch}`} />

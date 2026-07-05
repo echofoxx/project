@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CheckCircle2, CircleAlert } from "lucide-react";
 
 type Issue = {
   id: string;
@@ -75,28 +76,30 @@ export function IssueLog({
       {canEdit && (
         <form
           onSubmit={createIssue}
-          className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+          className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
         >
-          <h2 className="text-sm font-semibold text-slate-800">Log an issue</h2>
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+            Log an issue
+          </h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Issue title"
               required
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm sm:col-span-2"
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 sm:col-span-2 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             />
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Details (optional)"
               rows={2}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm sm:col-span-2"
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 sm:col-span-2 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             />
             <select
               value={taskId}
               onChange={(e) => setTaskId(e.target.value)}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm"
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:[color-scheme:dark]"
             >
               <option value="">Not linked to a task</option>
               {tasks.map((t) => (
@@ -107,7 +110,7 @@ export function IssueLog({
             </select>
             <button
               type="submit"
-              className="justify-self-start rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500"
+              className="justify-self-start rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
             >
               Log issue
             </button>
@@ -116,29 +119,34 @@ export function IssueLog({
       )}
 
       <div>
-        <h2 className="text-sm font-semibold text-slate-800">
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-slate-200">
+          <CircleAlert className="h-4 w-4 text-red-500" />
           Open issues ({open.length})
         </h2>
         <div className="mt-2 space-y-2">
           {open.length === 0 && (
-            <p className="text-sm text-slate-400">No open issues. Nice.</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500">No open issues. Nice.</p>
           )}
           {open.map((issue) => (
             <div
               key={issue.id}
-              className="rounded-lg border border-red-200 bg-red-50/40 p-3"
+              className="rounded-lg border border-red-200 bg-red-50/40 p-3 dark:border-red-900/50 dark:bg-red-500/5"
             >
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-slate-900">{issue.title}</h3>
-                <span className="text-xs text-slate-400">
+                <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                  {issue.title}
+                </h3>
+                <span className="text-xs text-slate-400 dark:text-slate-500">
                   {new Date(issue.createdAt).toLocaleDateString()}
                 </span>
               </div>
               {issue.description && (
-                <p className="mt-1 text-sm text-slate-600">{issue.description}</p>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                  {issue.description}
+                </p>
               )}
               {issue.task && (
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                   Linked to {issue.task.wbsCode} {issue.task.name}
                 </p>
               )}
@@ -150,12 +158,13 @@ export function IssueLog({
                     onChange={(e) =>
                       setResolutionDrafts((prev) => ({ ...prev, [issue.id]: e.target.value }))
                     }
-                    className="flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   />
                   <button
                     onClick={() => resolveIssue(issue.id)}
-                    className="rounded-md bg-emerald-600 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-500"
+                    className="flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
                   >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
                     Resolve
                   </button>
                 </div>
@@ -167,17 +176,22 @@ export function IssueLog({
 
       {resolved.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-slate-800">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
             Resolved ({resolved.length})
           </h2>
           <div className="mt-2 space-y-2">
             {resolved.map((issue) => (
-              <div key={issue.id} className="rounded-lg border border-slate-200 p-3 opacity-70">
-                <h3 className="text-sm font-medium text-slate-700 line-through">
+              <div
+                key={issue.id}
+                className="rounded-lg border border-slate-200 p-3 opacity-70 dark:border-slate-800"
+              >
+                <h3 className="text-sm font-medium text-slate-700 line-through dark:text-slate-400">
                   {issue.title}
                 </h3>
                 {issue.resolution && (
-                  <p className="mt-1 text-sm text-slate-500">{issue.resolution}</p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-500">
+                    {issue.resolution}
+                  </p>
                 )}
               </div>
             ))}

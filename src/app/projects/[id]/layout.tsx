@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { requireProjectAccess } from "@/lib/authz";
 import { getProjectForNav } from "@/lib/project-data";
 import { ProjectTabs } from "@/components/project-tabs";
@@ -22,14 +23,15 @@ export default async function ProjectLayout({
         <div>
           <Link
             href="/dashboard"
-            className="text-xs font-medium text-slate-400 hover:text-slate-600"
+            className="flex items-center gap-1 text-xs font-medium text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
           >
-            &larr; All projects
+            <ArrowLeft className="h-3 w-3" />
+            All projects
           </Link>
-          <h1 className="mt-1 text-2xl font-semibold text-slate-900">
+          <h1 className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">
             {project.name}
           </h1>
-          <p className="mt-0.5 text-sm text-slate-500">
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
             {project.type} &middot; {project.status}
             {project.startDate && (
               <>

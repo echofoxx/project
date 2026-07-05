@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { auth } from "@/auth";
 import { SiteNav } from "@/components/site-nav";
+import { ThemeScript } from "@/components/theme-script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,9 +31,13 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900">
+      <head>
+        <ThemeScript />
+      </head>
+      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
         <SiteNav user={session?.user ?? null} />
         <div className="flex-1 flex flex-col">{children}</div>
       </body>

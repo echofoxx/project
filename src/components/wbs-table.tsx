@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Diamond, Lock, Plus, Trash2, X } from "lucide-react";
 import { isBlockedByDependencies } from "@/lib/dependency-status";
 
 type TaskStatus = "BACKLOG" | "IN_PROGRESS" | "REVIEW" | "DONE";
@@ -43,9 +44,9 @@ const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
   { value: "DONE", label: "Done" },
 ];
 
-const cellClass = "px-2 py-1.5 text-sm";
+const cellClass = "px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300";
 const inputClass =
-  "w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-sm hover:border-slate-200 focus:border-indigo-400 focus:outline-none";
+  "w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-sm text-slate-700 hover:border-slate-200 focus:border-indigo-400 focus:outline-none dark:text-slate-300 dark:hover:border-slate-700 dark:[color-scheme:dark]";
 
 function phaseProgress(phase: WbsPhase) {
   if (phase.tasks.length === 0) return 0;
@@ -205,10 +206,10 @@ export function WbsTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
       <table className="w-full min-w-[900px] border-collapse">
         <thead>
-          <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
+          <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
             <th className="w-16 px-2 py-2">WBS</th>
             <th className="px-2 py-2">Task</th>
             <th className="w-36 px-2 py-2">Status</th>
@@ -247,18 +248,19 @@ export function WbsTable({
       </table>
 
       {canEdit && (
-        <div className="flex items-center gap-2 border-t border-slate-200 p-3">
+        <div className="flex items-center gap-2 border-t border-slate-200 p-3 dark:border-slate-800">
           <input
             value={newPhaseName}
             onChange={(e) => setNewPhaseName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addPhase()}
             placeholder="New phase name"
-            className="w-64 rounded-md border border-slate-300 px-2 py-1 text-sm"
+            className="w-64 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
           <button
             onClick={addPhase}
-            className="rounded-md bg-slate-900 px-3 py-1 text-sm font-medium text-white hover:bg-slate-700"
+            className="flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
           >
+            <Plus className="h-3.5 w-3.5" />
             Add phase
           </button>
         </div>
@@ -297,18 +299,21 @@ function PhaseRows({
   const progress = phaseProgress(phase);
   return (
     <>
-      <tr className="border-b border-slate-100 bg-slate-50/70">
-        <td className={cellClass + " font-mono text-slate-400"}>{phase.wbsCode}</td>
-        <td className={cellClass + " font-semibold text-slate-800"} colSpan={5}>
+      <tr className="border-b border-slate-100 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/30">
+        <td className={cellClass + " font-mono text-slate-400 dark:text-slate-500"}>{phase.wbsCode}</td>
+        <td className={cellClass + " font-semibold text-slate-800 dark:text-slate-200"} colSpan={5}>
           {phase.name}
         </td>
-        <td className={cellClass + " text-slate-500"}>{progress}%</td>
+        <td className={cellClass + " text-slate-500 dark:text-slate-400"}>{progress}%</td>
         <td className={cellClass}></td>
         <td className={cellClass}></td>
       </tr>
       {phase.tasks.map((task) => (
-        <tr key={task.id} className="border-b border-slate-100 hover:bg-slate-50">
-          <td className={cellClass + " font-mono text-xs text-slate-400"}>
+        <tr
+          key={task.id}
+          className="border-b border-slate-100 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/40"
+        >
+          <td className={cellClass + " font-mono text-xs text-slate-400 dark:text-slate-500"}>
             {task.wbsCode}
           </td>
           <td className={cellClass}>
@@ -323,15 +328,17 @@ function PhaseRows({
               className={inputClass}
             />
             {task.isMilestone && (
-              <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700">
+              <span className="ml-1 inline-flex items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                <Diamond className="h-2.5 w-2.5" />
                 milestone
               </span>
             )}
             {isBlockedByDependencies(task.dependsOn) && (
               <span
-                className="ml-1 rounded bg-red-100 px-1.5 py-0.5 text-[10px] text-red-700"
+                className="ml-1 inline-flex items-center gap-0.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] text-red-700 dark:bg-red-500/15 dark:text-red-400"
                 title="Waiting on an unfinished dependency"
               >
+                <Lock className="h-2.5 w-2.5" />
                 blocked
               </span>
             )}
@@ -409,8 +416,8 @@ function PhaseRows({
                   key={dep.dependencyId}
                   className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] ${
                     dep.status === "DONE"
-                      ? "bg-slate-100 text-slate-500"
-                      : "bg-amber-50 text-amber-700"
+                      ? "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                      : "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400"
                   }`}
                   title={dep.name}
                 >
@@ -420,7 +427,7 @@ function PhaseRows({
                       onClick={() => onRemoveDependency(task.id, dep.dependencyId)}
                       className="text-slate-400 hover:text-red-500"
                     >
-                      &times;
+                      <X className="h-2.5 w-2.5" />
                     </button>
                   )}
                 </span>
@@ -431,7 +438,7 @@ function PhaseRows({
                   onChange={(e) => {
                     if (e.target.value) onAddDependency(task.id, e.target.value);
                   }}
-                  className="rounded border border-dashed border-slate-200 bg-transparent text-[11px] text-slate-400 focus:outline-none"
+                  className="rounded border border-dashed border-slate-200 bg-transparent text-[11px] text-slate-400 focus:outline-none dark:border-slate-700 dark:[color-scheme:dark]"
                 >
                   <option value="">+ add</option>
                   {allTasks
@@ -449,24 +456,24 @@ function PhaseRows({
               )}
             </div>
             {depErrors[task.id] && (
-              <p className="mt-0.5 text-[11px] text-red-600">{depErrors[task.id]}</p>
+              <p className="mt-0.5 text-[11px] text-red-600 dark:text-red-400">{depErrors[task.id]}</p>
             )}
           </td>
           <td className={cellClass}>
             {canEdit && (
               <button
                 onClick={() => onDeleteTask(task.id)}
-                className="text-slate-300 hover:text-red-500"
+                className="text-slate-300 hover:text-red-500 dark:text-slate-600"
                 title="Delete task"
               >
-                &times;
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
             )}
           </td>
         </tr>
       ))}
       {canEdit && (
-        <tr className="border-b border-slate-100">
+        <tr className="border-b border-slate-100 dark:border-slate-800">
           <td className={cellClass}></td>
           <td className={cellClass} colSpan={8}>
             <input
@@ -474,7 +481,7 @@ function PhaseRows({
               onChange={(e) => onNewTaskNameChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onAddTask()}
               placeholder="+ Add task"
-              className="w-full rounded border border-dashed border-slate-200 px-2 py-1 text-sm text-slate-500 focus:border-indigo-400 focus:outline-none"
+              className="w-full rounded border border-dashed border-slate-200 px-2 py-1 text-sm text-slate-500 focus:border-indigo-400 focus:outline-none dark:border-slate-700 dark:text-slate-400"
             />
           </td>
         </tr>

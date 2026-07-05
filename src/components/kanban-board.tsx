@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
+import { Diamond, Lock } from "lucide-react";
 
 type TaskStatus = "BACKLOG" | "IN_PROGRESS" | "REVIEW" | "DONE";
 
@@ -36,12 +37,16 @@ type BoardTask = {
   isBlocked: boolean;
 };
 
-const COLUMNS: { status: TaskStatus; label: string; accent: string }[] = [
-  { status: "BACKLOG", label: "Backlog", accent: "bg-slate-400" },
-  { status: "IN_PROGRESS", label: "In Progress", accent: "bg-blue-500" },
-  { status: "REVIEW", label: "Review", accent: "bg-amber-500" },
-  { status: "DONE", label: "Done", accent: "bg-emerald-500" },
+const COLUMNS: { status: TaskStatus; label: string; accent: string; border: string }[] = [
+  { status: "BACKLOG", label: "Backlog", accent: "bg-slate-400", border: "border-l-slate-400" },
+  { status: "IN_PROGRESS", label: "In Progress", accent: "bg-blue-500", border: "border-l-blue-500" },
+  { status: "REVIEW", label: "Review", accent: "bg-amber-500", border: "border-l-amber-500" },
+  { status: "DONE", label: "Done", accent: "bg-emerald-500", border: "border-l-emerald-500" },
 ];
+
+const BORDER_BY_STATUS: Record<TaskStatus, string> = Object.fromEntries(
+  COLUMNS.map((c) => [c.status, c.border]),
+) as Record<TaskStatus, string>;
 
 function isOverdue(task: BoardTask) {
   if (!task.plannedEnd || task.status === "DONE") return false;
@@ -52,35 +57,37 @@ function TaskCard({ task, dragging }: { task: BoardTask; dragging?: boolean }) {
   const overdue = isOverdue(task);
   return (
     <div
-      className={`rounded-md border bg-white p-3 text-sm shadow-sm ${
-        dragging ? "opacity-70 shadow-lg" : ""
-      } ${overdue ? "border-red-300" : "border-slate-200"}`}
+      className={`rounded-md border border-y-slate-200 border-r-slate-200 border-l-4 bg-white p-3 text-sm shadow-sm transition-shadow dark:border-y-slate-800 dark:border-r-slate-800 dark:bg-slate-900 ${
+        dragging ? "opacity-70 shadow-lg" : "hover:shadow-md"
+      } ${BORDER_BY_STATUS[task.status]}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="font-medium text-slate-800">{task.name}</span>
+        <span className="font-medium text-slate-800 dark:text-slate-200">{task.name}</span>
         <span className="flex shrink-0 gap-1">
           {task.isBlocked && (
             <span
-              className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700"
+              className="flex items-center gap-0.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-500/15 dark:text-red-400"
               title="Waiting on an unfinished dependency"
             >
+              <Lock className="h-2.5 w-2.5" />
               blocked
             </span>
           )}
           {task.isMilestone && (
-            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+            <span className="flex items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+              <Diamond className="h-2.5 w-2.5" />
               milestone
             </span>
           )}
         </span>
       </div>
-      <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
+      <div className="mt-2 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
         <span>{task.phaseName}</span>
         <span>{task.wbsCode}</span>
       </div>
       <div className="mt-2 flex items-center justify-between">
         <span
-          className={`text-xs ${overdue ? "font-medium text-red-600" : "text-slate-400"}`}
+          className={`text-xs ${overdue ? "font-medium text-red-600 dark:text-red-400" : "text-slate-400 dark:text-slate-500"}`}
         >
           {task.plannedEnd
             ? new Date(task.plannedEnd).toLocaleDateString()
@@ -89,7 +96,7 @@ function TaskCard({ task, dragging }: { task: BoardTask; dragging?: boolean }) {
         {task.assignee && (
           <span
             title={task.assignee.name}
-            className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-semibold text-indigo-700"
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300"
           >
             {task.assignee.name.slice(0, 2).toUpperCase()}
           </span>
@@ -136,14 +143,14 @@ function Column({
 
   return (
     <div
-      className={`flex w-72 shrink-0 flex-col rounded-lg bg-slate-100 p-2 ${
+      className={`flex w-72 shrink-0 flex-col rounded-lg bg-slate-100 p-2 dark:bg-slate-900/60 ${
         isOver ? "ring-2 ring-indigo-400" : ""
       }`}
     >
       <div className="flex items-center gap-2 px-1 py-1.5">
         <span className={`h-2 w-2 rounded-full ${accent}`} />
-        <h3 className="text-sm font-semibold text-slate-700">{label}</h3>
-        <span className="ml-auto text-xs text-slate-400">{tasks.length}</span>
+        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{label}</h3>
+        <span className="ml-auto text-xs text-slate-400 dark:text-slate-500">{tasks.length}</span>
       </div>
       <SortableContext
         items={tasks.map((t) => t.id)}
