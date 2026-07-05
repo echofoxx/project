@@ -37,14 +37,28 @@ export async function PATCH(
 
     const body = updateSchema.parse(await request.json());
 
+    // Derive actual start/end from status changes so the timeline view has
+    // real data without a separate manual date-entry step: the first time a
+    // task leaves Backlog we stamp actualStart, and the first time it
+    // reaches Done we stamp actualEnd. Explicit values in the request (incl.
+    // null, to clear) always take precedence over this inference.
+    const now = new Date();
+    const shouldAutoStart =
+      body.actualStart === undefined &&
+      body.status !== undefined &&
+      body.status !== "BACKLOG" &&
+      !task.actualStart;
+    const shouldAutoEnd =
+      body.actualEnd === undefined && body.status === "DONE" && !task.actualEnd;
+
     const updated = await prisma.task.update({
       where: { id },
       data: {
         ...body,
         plannedStart: toDate(body.plannedStart),
         plannedEnd: toDate(body.plannedEnd),
-        actualStart: toDate(body.actualStart),
-        actualEnd: toDate(body.actualEnd),
+        actualStart: shouldAutoStart ? now : toDate(body.actualStart),
+        actualEnd: shouldAutoEnd ? now : toDate(body.actualEnd),
         percentComplete:
           body.status === "DONE" ? 100 : body.percentComplete,
       },

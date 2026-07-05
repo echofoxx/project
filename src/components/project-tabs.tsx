@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { slug: "board", label: "Board" },
   { slug: "wbs", label: "WBS" },
+  { slug: "timeline", label: "Timeline" },
   { slug: "issues", label: "Issues" },
   { slug: "report", label: "Report" },
   { slug: "settings", label: "Settings" },
