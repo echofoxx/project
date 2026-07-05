@@ -1,0 +1,38 @@
+import { notFound } from "next/navigation";
+import { requireProjectAccess } from "@/lib/authz";
+import { getProjectBoardData } from "@/lib/project-data";
+import { KanbanBoard } from "@/components/kanban-board";
+
+export default async function BoardPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const { membership } = await requireProjectAccess(id, "VIEWER");
+  const project = await getProjectBoardData(id);
+  if (!project) notFound();
+
+  const tasks = project.phases.flatMap((phase) =>
+    phase.tasks
+      .filter((t) => !t.parentTaskId)
+      .map((task) => ({
+        id: task.id,
+        name: task.name,
+        wbsCode: task.wbsCode,
+        status: task.status,
+        isMilestone: task.isMilestone,
+        order: task.order,
+        plannedEnd: task.plannedEnd?.toISOString() ?? null,
+        assignee: task.assignee,
+        phaseName: phase.name,
+      })),
+  );
+
+  return (
+    <KanbanBoard
+      initialTasks={tasks}
+      canEdit={membership.role !== "VIEWER"}
+    />
+  );
+}

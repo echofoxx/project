@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProjectType {
+  SOFTWARE
+  HOME
+  AUTO
+  EVENT
+  CUSTOM
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum TaskStatus {
+  BACKLOG
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+enum MemberRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum IssueStatus {
+  OPEN
+  RESOLVED
+}
+
+model User {
+  id             String          @id @default(cuid())
+  name           String
+  email          String          @unique
+  passwordHash   String
+  createdAt      DateTime        @default(now())
+  memberships    ProjectMember[]
+  assignedTasks  Task[]          @relation("TaskAssignee")
+  ownedProjects  Project[]       @relation("ProjectOwner")
+}
+
+model Project {
+  id              String          @id @default(cuid())
+  name            String
+  type            ProjectType
+  description     String?
+  status          ProjectStatus   @default(PLANNING)
+  startDate       DateTime?
+  endDate         DateTime?
+  lessonsLearned  String?
+  ownerId         String
+  owner           User            @relation("ProjectOwner", fields: [ownerId], references: [id])
+  members         ProjectMember[]
+  phases          Phase[]
+  tasks           Task[]
+  issues          Issue[]
+  clonedFromId    String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model ProjectMember {
+  id        String      @id @default(cuid())
+  projectId String
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  role      MemberRole  @default(EDITOR)
+  createdAt DateTime    @default(now())
+
+  @@unique([projectId, userId])
+}
+
+model Phase {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  wbsCode   String
+  order     Int
+  tasks     Task[]
+}
+
+model Task {
+  id             String     @id @default(cuid())
+  projectId      String
+  project        Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phaseId        String
+  phase          Phase      @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  parentTaskId   String?
+  parentTask     Task?      @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subtasks       Task[]     @relation("TaskSubtasks")
+  name           String
+  wbsCode        String
+  description    String?
+  status         TaskStatus @default(BACKLOG)
+  isMilestone    Boolean    @default(false)
+  plannedStart   DateTime?
+  plannedEnd     DateTime?
+  actualStart    DateTime?
+  actualEnd      DateTime?
+  percentComplete Int       @default(0)
+  assigneeId     String?
+  assignee       User?      @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  order          Int        @default(0)
+  issues         Issue[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model Issue {
+  id          String      @id @default(cuid())
+  projectId   String
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId      String?
+  task        Task?       @relation(fields: [taskId], references: [id])
+  title       String
+  description String?
+  status      IssueStatus @default(OPEN)
+  resolution  String?
+  createdAt   DateTime    @default(now())
+  resolvedAt  DateTime?
+}
+
+model TemplateProject {
+  id          String          @id @default(cuid())
+  name        String
+  type        ProjectType
+  description String?
+  isBuiltin   Boolean         @default(false)
+  phases      TemplatePhase[]
+  createdAt   DateTime        @default(now())
+}
+
+model TemplatePhase {
+  id                String            @id @default(cuid())
+  templateProjectId String
+  templateProject   TemplateProject   @relation(fields: [templateProjectId], references: [id], onDelete: Cascade)
+  name              String
+  wbsCode           String
+  order             Int
+  tasks             TemplateTask[]
+}
+
+model TemplateTask {
+  id                    String        @id @default(cuid())
+  templatePhaseId       String
+  templatePhase         TemplatePhase @relation(fields: [templatePhaseId], references: [id], onDelete: Cascade)
+  name                  String
+  wbsCode               String
+  isMilestone           Boolean       @default(false)
+  relativeStartDay      Int           @default(0)
+  relativeDurationDays  Int           @default(1)
+  order                 Int
+}
