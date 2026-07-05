@@ -40,3 +40,12 @@ body {
 .dark ::selection {
   background: theme(--color-indigo-900);
 }
+
+@media print {
+  :root,
+  .dark {
+    --background: #ffffff;
+    --foreground: #171717;
+    color-scheme: light;
+  }
+}

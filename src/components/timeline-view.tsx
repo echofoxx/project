@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { Flame } from "lucide-react";
 
 type TaskStatus = "BACKLOG" | "IN_PROGRESS" | "REVIEW" | "DONE";
 
@@ -65,11 +66,14 @@ export function TimelineView({
   phases,
   projectStart,
   projectEnd,
+  criticalTaskIds = [],
 }: {
   phases: TimelinePhase[];
   projectStart: string | null;
   projectEnd: string | null;
+  criticalTaskIds?: string[];
 }) {
+  const criticalSet = new Set(criticalTaskIds);
   const allTasks = phases.flatMap((p) => p.tasks);
 
   const { rangeStart, rangeEnd, totalDays } = useMemo(() => {
@@ -196,7 +200,13 @@ export function TimelineView({
                   />
                 </div>
                 {phase.tasks.map((task) => (
-                  <TimelineRow key={task.id} task={task} rangeStart={rangeStart} chartWidth={chartWidth} />
+                  <TimelineRow
+                    key={task.id}
+                    task={task}
+                    rangeStart={rangeStart}
+                    chartWidth={chartWidth}
+                    isCritical={criticalSet.has(task.id)}
+                  />
                 ))}
               </div>
             ))}
@@ -247,10 +257,12 @@ function TimelineRow({
   task,
   rangeStart,
   chartWidth,
+  isCritical,
 }: {
   task: TimelineTask;
   rangeStart: Date;
   chartWidth: number;
+  isCritical: boolean;
 }) {
   const plannedStart = task.plannedStart ? new Date(task.plannedStart) : null;
   const plannedEnd = task.plannedEnd ? new Date(task.plannedEnd) : null;
@@ -295,6 +307,14 @@ function TimelineRow({
       >
         <span className="shrink-0 font-mono text-xs text-slate-400 dark:text-slate-500">{task.wbsCode}</span>
         <span className="truncate">{task.name}</span>
+        {isCritical && (
+          <span
+            title="On the critical path - any delay here pushes the project end date out"
+            className="shrink-0"
+          >
+            <Flame className="h-3 w-3 text-rose-500" />
+          </span>
+        )}
       </div>
       <div
         className="relative border-b border-slate-100 dark:border-slate-800"
@@ -303,7 +323,9 @@ function TimelineRow({
         {task.isMilestone ? (
           milestoneOffset !== null && (
             <div
-              className={`absolute top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 ${milestoneColor}`}
+              className={`absolute top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 ${milestoneColor} ${
+                isCritical ? "ring-2 ring-rose-400 ring-offset-1" : ""
+              }`}
               style={{ left: milestoneOffset - 6 }}
               title={`${task.name} (milestone)`}
             />
@@ -312,9 +334,13 @@ function TimelineRow({
           <>
             {plannedBar && (
               <div
-                className="absolute top-1/2 h-3 -translate-y-1/2 rounded border border-slate-300 bg-slate-100 dark:border-slate-600 dark:bg-slate-700"
+                className={`absolute top-1/2 h-3 -translate-y-1/2 rounded border bg-slate-100 dark:bg-slate-700 ${
+                  isCritical
+                    ? "border-2 border-rose-400 dark:border-rose-500"
+                    : "border-slate-300 dark:border-slate-600"
+                }`}
                 style={{ left: plannedBar.left, width: plannedBar.width }}
-                title={`Planned: ${plannedStart?.toLocaleDateString()} – ${plannedEnd?.toLocaleDateString()}`}
+                title={`Planned: ${plannedStart?.toLocaleDateString()} – ${plannedEnd?.toLocaleDateString()}${isCritical ? " (critical path)" : ""}`}
               />
             )}
             {actualBar && (
@@ -347,6 +373,10 @@ function Legend() {
           {item.label}
         </span>
       ))}
+      <span className="flex items-center gap-1.5">
+        <Flame className="h-3 w-3 text-rose-500" />
+        Critical path (zero slack)
+      </span>
     </div>
   );
 }

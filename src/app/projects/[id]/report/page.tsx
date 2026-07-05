@@ -3,7 +3,14 @@ import { requireProjectAccess } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { computeTrackStatus } from "@/lib/report";
 import { isBlockedByDependencies } from "@/lib/dependency-status";
+import { computeCriticalPath } from "@/lib/critical-path";
+import { computeCycleTimes, groupCycleTimesByOwner, groupCycleTimesByPhase } from "@/lib/cycle-time";
+import { computeBurnup } from "@/lib/burnup";
 import { ReportDashboard } from "@/components/report-dashboard";
+import { CriticalPathPanel } from "@/components/critical-path-panel";
+import { CycleTimePanel } from "@/components/cycle-time-panel";
+import { BurnupChart } from "@/components/burnup-chart";
+import { ReportExportBar } from "@/components/report-export-bar";
 
 export default async function ReportPage({
   params,
@@ -13,22 +20,29 @@ export default async function ReportPage({
   const { id } = await params;
   await requireProjectAccess(id, "VIEWER");
 
-  const tasks = await prisma.task.findMany({
-    where: { projectId: id, parentTaskId: null },
-    include: {
-      assignee: { select: { id: true, name: true } },
-      dependsOn: {
-        include: {
-          dependsOnTask: { select: { id: true, name: true, wbsCode: true, status: true } },
+  const [project, tasks] = await Promise.all([
+    prisma.project.findUniqueOrThrow({
+      where: { id },
+      select: { name: true, startDate: true, endDate: true },
+    }),
+    prisma.task.findMany({
+      where: { projectId: id, parentTaskId: null },
+      include: {
+        assignee: { select: { id: true, name: true } },
+        phase: { select: { name: true } },
+        dependsOn: {
+          include: {
+            dependsOnTask: { select: { id: true, name: true, wbsCode: true, status: true } },
+          },
         },
+        blocks: {
+          include: { task: { select: { id: true, name: true, wbsCode: true, status: true } } },
+        },
+        issues: { select: { id: true, title: true, status: true } },
       },
-      blocks: {
-        include: { task: { select: { id: true, name: true, wbsCode: true, status: true } } },
-      },
-      issues: { select: { id: true, title: true, status: true } },
-    },
-    orderBy: { wbsCode: "asc" },
-  });
+      orderBy: { wbsCode: "asc" },
+    }),
+  ]);
 
   if (!tasks) notFound();
 
@@ -58,5 +72,78 @@ export default async function ReportPage({
     issues: task.issues.map((i) => ({ id: i.id, title: i.title, status: i.status })),
   }));
 
-  return <ReportDashboard projectId={id} tasks={reportTasks} />;
+  // --- Critical path ---
+  const { results: cpmResults, projectEnd: computedEnd } = computeCriticalPath(
+    tasks.map((t) => ({
+      id: t.id,
+      plannedStart: t.plannedStart,
+      plannedEnd: t.plannedEnd,
+      dependsOnTaskIds: t.dependsOn.map((d) => d.dependsOnTask.id),
+    })),
+  );
+  const cpmById = new Map(cpmResults.map((r) => [r.id, r]));
+  const criticalTasks = tasks
+    .filter((t) => cpmById.get(t.id)?.isCritical)
+    .sort((a, b) => cpmById.get(a.id)!.earliestStart.getTime() - cpmById.get(b.id)!.earliestStart.getTime())
+    .map((t) => ({
+      id: t.id,
+      wbsCode: t.wbsCode,
+      name: t.name,
+      earliestStart: cpmById.get(t.id)!.earliestStart.toISOString(),
+      earliestFinish: cpmById.get(t.id)!.earliestFinish.toISOString(),
+    }));
+  const targetEnd = project.endDate;
+  const varianceDays =
+    computedEnd && targetEnd
+      ? Math.round((computedEnd.getTime() - targetEnd.getTime()) / (24 * 60 * 60 * 1000))
+      : null;
+
+  // --- Cycle time ---
+  const cycleEntries = computeCycleTimes(
+    tasks.map((t) => ({
+      id: t.id,
+      actualStart: t.actualStart,
+      actualEnd: t.actualEnd,
+      owner: t.assignee?.name ?? "Unassigned",
+      phaseName: t.phase.name,
+    })),
+  );
+  const cycleTimeByOwner = groupCycleTimesByOwner(cycleEntries);
+  const cycleTimeByPhase = groupCycleTimesByPhase(cycleEntries);
+
+  // --- Burnup ---
+  const plannedDates = tasks.map((t) => t.plannedEnd).filter((d): d is Date => Boolean(d));
+  const rangeStart =
+    project.startDate ??
+    (plannedDates.length
+      ? new Date(Math.min(...plannedDates.map((d) => d.getTime())))
+      : today);
+  const rangeEndCandidate =
+    project.endDate ??
+    (plannedDates.length
+      ? new Date(Math.max(...plannedDates.map((d) => d.getTime())))
+      : today);
+  const rangeEnd = rangeEndCandidate > today ? rangeEndCandidate : today;
+  const burnup = computeBurnup(
+    tasks.map((t) => ({ plannedEnd: t.plannedEnd, actualEnd: t.actualEnd, status: t.status })),
+    rangeStart,
+    rangeEnd,
+    today,
+  );
+
+  return (
+    <div className="space-y-6">
+      <ReportExportBar projectId={id} projectName={project.name} />
+      <ReportDashboard projectId={id} tasks={reportTasks} />
+      <BurnupChart points={burnup.points} total={burnup.total} />
+      <CriticalPathPanel
+        projectId={id}
+        criticalTasks={criticalTasks}
+        projectEnd={computedEnd?.toISOString() ?? null}
+        targetEnd={targetEnd?.toISOString() ?? null}
+        varianceDays={varianceDays}
+      />
+      <CycleTimePanel byOwner={cycleTimeByOwner} byPhase={cycleTimeByPhase} />
+    </div>
+  );
 }

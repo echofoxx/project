@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireProjectAccess } from "@/lib/authz";
 import { getProjectBoardData } from "@/lib/project-data";
+import { computeCriticalPath } from "@/lib/critical-path";
 import { TimelineView } from "@/components/timeline-view";
 
 export default async function TimelinePage({
@@ -34,11 +35,23 @@ export default async function TimelinePage({
       })),
   }));
 
+  const allTasks = project.phases.flatMap((phase) => phase.tasks).filter((t) => !t.parentTaskId);
+  const { results: cpmResults } = computeCriticalPath(
+    allTasks.map((t) => ({
+      id: t.id,
+      plannedStart: t.plannedStart,
+      plannedEnd: t.plannedEnd,
+      dependsOnTaskIds: t.dependsOn.map((d) => d.dependsOnTask.id),
+    })),
+  );
+  const criticalTaskIds = cpmResults.filter((r) => r.isCritical).map((r) => r.id);
+
   return (
     <TimelineView
       phases={phases}
       projectStart={project.startDate?.toISOString() ?? null}
       projectEnd={project.endDate?.toISOString() ?? null}
+      criticalTaskIds={criticalTaskIds}
     />
   );
 }

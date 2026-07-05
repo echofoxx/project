@@ -4,6 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, CircleAlert, X } from "lucide-react";
 import { useHighlightTarget } from "@/hooks/use-highlight-target";
+import { ageInDays, bucketForAge, type AgingBucket } from "@/lib/issue-aging";
+
+const AGING_BUCKETS: AgingBucket[] = ["0-2 days", "3-7 days", "8-14 days", "15+ days"];
 
 type Issue = {
   id: string;
@@ -37,6 +40,7 @@ export function IssueLog({
   const [description, setDescription] = useState("");
   const [taskId, setTaskId] = useState("");
   const [resolutionDrafts, setResolutionDrafts] = useState<Record<string, string>>({});
+  const [ageFilter, setAgeFilter] = useState<AgingBucket | null>(null);
 
   useHighlightTarget(highlightIssueId ? `issue-${highlightIssueId}` : null);
 
@@ -77,8 +81,19 @@ export function IssueLog({
   }
 
   const scopedIssues = taskFilter ? issues.filter((i) => i.task?.id === taskFilter.id) : issues;
-  const open = scopedIssues.filter((i) => i.status === "OPEN");
+  const allOpen = scopedIssues.filter((i) => i.status === "OPEN");
   const resolved = scopedIssues.filter((i) => i.status === "RESOLVED");
+  const today = new Date();
+
+  const agingCounts = AGING_BUCKETS.map((bucket) => ({
+    bucket,
+    count: allOpen.filter((i) => bucketForAge(ageInDays(new Date(i.createdAt), today)) === bucket)
+      .length,
+  }));
+
+  const open = ageFilter
+    ? allOpen.filter((i) => bucketForAge(ageInDays(new Date(i.createdAt), today)) === ageFilter)
+    : allOpen;
 
   return (
     <div className="space-y-6">
@@ -140,13 +155,46 @@ export function IssueLog({
       )}
 
       <div>
-        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-slate-200">
-          <CircleAlert className="h-4 w-4 text-red-500" />
-          Open issues ({open.length})
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-slate-200">
+            <CircleAlert className="h-4 w-4 text-red-500" />
+            Open issues ({open.length})
+          </h2>
+          {allOpen.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-slate-400 dark:text-slate-500">Age:</span>
+              {agingCounts.map(({ bucket, count }) => (
+                <button
+                  key={bucket}
+                  type="button"
+                  disabled={count === 0}
+                  onClick={() => setAgeFilter((prev) => (prev === bucket ? null : bucket))}
+                  className={`rounded-full px-2 py-0.5 text-xs font-medium transition-colors disabled:cursor-default disabled:opacity-40 ${
+                    ageFilter === bucket
+                      ? "bg-indigo-600 text-white"
+                      : "bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
+                  }`}
+                >
+                  {bucket} ({count})
+                </button>
+              ))}
+              {ageFilter && (
+                <button
+                  type="button"
+                  onClick={() => setAgeFilter(null)}
+                  className="text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                >
+                  clear
+                </button>
+              )}
+            </div>
+          )}
+        </div>
         <div className="mt-2 space-y-2">
           {open.length === 0 && (
-            <p className="text-sm text-slate-400 dark:text-slate-500">No open issues. Nice.</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500">
+              {allOpen.length === 0 ? "No open issues. Nice." : "No open issues in this age range."}
+            </p>
           )}
           {open.map((issue) => (
             <div

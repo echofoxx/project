@@ -9,7 +9,7 @@ export function SiteNav({
   user: { name?: string | null; email?: string | null } | null;
 }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/80">
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-sm print:hidden dark:border-slate-800 dark:bg-slate-950/80">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-indigo-500 to-indigo-700 text-sm font-bold text-white shadow-sm shadow-indigo-500/30">

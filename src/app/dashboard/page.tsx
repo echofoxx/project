@@ -2,6 +2,8 @@ import Link from "next/link";
 import { FolderKanban, Home, Laptop, Plus, Sparkles, Wrench } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/authz";
+import { isBlockedByDependencies } from "@/lib/dependency-status";
+import { PortfolioSummary } from "@/components/portfolio-summary";
 
 const STATUS_STYLES: Record<string, string> = {
   PLANNING: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
@@ -27,12 +29,41 @@ export default async function DashboardPage() {
       project: {
         include: {
           _count: { select: { phases: true } },
-          tasks: { select: { status: true } },
+          tasks: {
+            select: {
+              status: true,
+              plannedEnd: true,
+              parentTaskId: true,
+              dependsOn: { select: { dependsOnTask: { select: { status: true } } } },
+            },
+          },
         },
       },
     },
     orderBy: { project: { updatedAt: "desc" } },
   });
+
+  const today = new Date(new Date().toDateString());
+  let totalTasks = 0;
+  let totalDone = 0;
+  let totalOverdue = 0;
+  let totalBlocked = 0;
+  let activeProjects = 0;
+  for (const { project } of memberships) {
+    if (project.status === "ACTIVE") activeProjects += 1;
+    for (const task of project.tasks) {
+      if (task.parentTaskId) continue;
+      totalTasks += 1;
+      if (task.status === "DONE") totalDone += 1;
+      if (task.status !== "DONE" && task.plannedEnd && task.plannedEnd < today) totalOverdue += 1;
+      if (
+        task.status !== "DONE" &&
+        isBlockedByDependencies(task.dependsOn.map((d) => ({ status: d.dependsOnTask.status })))
+      ) {
+        totalBlocked += 1;
+      }
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10">
@@ -53,6 +84,17 @@ export default async function DashboardPage() {
           New project
         </Link>
       </div>
+
+      {memberships.length > 0 && (
+        <PortfolioSummary
+          projectCount={memberships.length}
+          activeProjects={activeProjects}
+          totalTasks={totalTasks}
+          totalDone={totalDone}
+          totalOverdue={totalOverdue}
+          totalBlocked={totalBlocked}
+        />
+      )}
 
       {memberships.length === 0 ? (
         <div className="mt-12 rounded-lg border border-dashed border-slate-300 p-10 text-center dark:border-slate-700">
