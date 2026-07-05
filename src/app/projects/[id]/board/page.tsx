@@ -5,10 +5,13 @@ import { KanbanBoard } from "@/components/kanban-board";
 
 export default async function BoardPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ highlight?: string }>;
 }) {
   const { id } = await params;
+  const { highlight } = await searchParams;
   const { membership } = await requireProjectAccess(id, "VIEWER");
   const project = await getProjectBoardData(id);
   if (!project) notFound();
@@ -34,6 +37,7 @@ export default async function BoardPage({
     <KanbanBoard
       initialTasks={tasks}
       canEdit={membership.role !== "VIEWER"}
+      highlightTaskId={highlight}
     />
   );
 }

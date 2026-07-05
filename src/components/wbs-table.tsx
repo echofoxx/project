@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Diamond, Lock, Plus, Trash2, X } from "lucide-react";
 import { isBlockedByDependencies } from "@/lib/dependency-status";
+import { useHighlightTarget } from "@/hooks/use-highlight-target";
 
 type TaskStatus = "BACKLOG" | "IN_PROGRESS" | "REVIEW" | "DONE";
 
@@ -60,17 +61,21 @@ export function WbsTable({
   members,
   allTasks,
   canEdit,
+  highlightTaskId,
 }: {
   projectId: string;
   initialPhases: WbsPhase[];
   members: Member[];
   allTasks: TaskOption[];
   canEdit: boolean;
+  highlightTaskId?: string;
 }) {
   const [phases, setPhases] = useState(initialPhases);
   const [newTaskName, setNewTaskName] = useState<Record<string, string>>({});
   const [newPhaseName, setNewPhaseName] = useState("");
   const [depErrors, setDepErrors] = useState<Record<string, string>>({});
+
+  useHighlightTarget(highlightTaskId ? `task-row-${highlightTaskId}` : null);
 
   function patchTaskLocal(taskId: string, patch: Partial<WbsTask>) {
     setPhases((prev) =>
@@ -242,6 +247,7 @@ export function WbsTable({
               onAddDependency={addDependency}
               onRemoveDependency={removeDependency}
               depErrors={depErrors}
+              highlightTaskId={highlightTaskId}
             />
           ))}
         </tbody>
@@ -282,6 +288,7 @@ function PhaseRows({
   onAddDependency,
   onRemoveDependency,
   depErrors,
+  highlightTaskId,
 }: {
   phase: WbsPhase;
   members: Member[];
@@ -295,6 +302,7 @@ function PhaseRows({
   onAddDependency: (taskId: string, dependsOnTaskId: string) => void;
   onRemoveDependency: (taskId: string, dependencyId: string) => void;
   depErrors: Record<string, string>;
+  highlightTaskId?: string;
 }) {
   const progress = phaseProgress(phase);
   return (
@@ -311,7 +319,12 @@ function PhaseRows({
       {phase.tasks.map((task) => (
         <tr
           key={task.id}
-          className="border-b border-slate-100 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/40"
+          id={`task-row-${task.id}`}
+          className={`border-b border-slate-100 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/40 ${
+            task.id === highlightTaskId
+              ? "bg-indigo-50 ring-1 ring-inset ring-indigo-300 dark:bg-indigo-500/10 dark:ring-indigo-500/40"
+              : ""
+          }`}
         >
           <td className={cellClass + " font-mono text-xs text-slate-400 dark:text-slate-500"}>
             {task.wbsCode}

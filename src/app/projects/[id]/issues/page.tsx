@@ -5,10 +5,13 @@ import { IssueLog } from "@/components/issue-log";
 
 export default async function IssuesPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ highlight?: string; task?: string }>;
 }) {
   const { id } = await params;
+  const { highlight, task: taskFilterId } = await searchParams;
   const { membership } = await requireProjectAccess(id, "VIEWER");
 
   const [issues, tasks] = await Promise.all([
@@ -26,6 +29,8 @@ export default async function IssuesPage({
 
   if (!issues) notFound();
 
+  const taskFilter = taskFilterId ? tasks.find((t) => t.id === taskFilterId) ?? null : null;
+
   return (
     <IssueLog
       projectId={id}
@@ -40,6 +45,8 @@ export default async function IssuesPage({
         createdAt: issue.createdAt.toISOString(),
         task: issue.task,
       }))}
+      highlightIssueId={highlight}
+      taskFilter={taskFilter}
     />
   );
 }

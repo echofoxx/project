@@ -5,10 +5,13 @@ import { WbsTable } from "@/components/wbs-table";
 
 export default async function WbsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ highlight?: string }>;
 }) {
   const { id } = await params;
+  const { highlight } = await searchParams;
   const { membership } = await requireProjectAccess(id, "VIEWER");
   const project = await getProjectBoardData(id);
   if (!project) notFound();
@@ -56,6 +59,7 @@ export default async function WbsPage({
       members={members}
       allTasks={allTasks}
       canEdit={membership.role !== "VIEWER"}
+      highlightTaskId={highlight}
     />
   );
 }

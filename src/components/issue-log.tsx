@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, CircleAlert } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, CircleAlert, X } from "lucide-react";
+import { useHighlightTarget } from "@/hooks/use-highlight-target";
 
 type Issue = {
   id: string;
@@ -20,17 +22,23 @@ export function IssueLog({
   canEdit,
   tasks,
   initialIssues,
+  highlightIssueId,
+  taskFilter,
 }: {
   projectId: string;
   canEdit: boolean;
   tasks: TaskOption[];
   initialIssues: Issue[];
+  highlightIssueId?: string;
+  taskFilter?: TaskOption | null;
 }) {
   const [issues, setIssues] = useState(initialIssues);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [taskId, setTaskId] = useState("");
   const [resolutionDrafts, setResolutionDrafts] = useState<Record<string, string>>({});
+
+  useHighlightTarget(highlightIssueId ? `issue-${highlightIssueId}` : null);
 
   async function createIssue(e: React.FormEvent) {
     e.preventDefault();
@@ -68,11 +76,24 @@ export function IssueLog({
     );
   }
 
-  const open = issues.filter((i) => i.status === "OPEN");
-  const resolved = issues.filter((i) => i.status === "RESOLVED");
+  const scopedIssues = taskFilter ? issues.filter((i) => i.task?.id === taskFilter.id) : issues;
+  const open = scopedIssues.filter((i) => i.status === "OPEN");
+  const resolved = scopedIssues.filter((i) => i.status === "RESOLVED");
 
   return (
     <div className="space-y-6">
+      {taskFilter && (
+        <div className="flex items-center gap-2 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-700 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300">
+          Filtered to issues on {taskFilter.wbsCode} {taskFilter.name}
+          <Link
+            href={`/projects/${projectId}/issues`}
+            className="ml-auto flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+          >
+            <X className="h-3 w-3" />
+            Clear
+          </Link>
+        </div>
+      )}
       {canEdit && (
         <form
           onSubmit={createIssue}
@@ -130,7 +151,12 @@ export function IssueLog({
           {open.map((issue) => (
             <div
               key={issue.id}
-              className="rounded-lg border border-red-200 bg-red-50/40 p-3 dark:border-red-900/50 dark:bg-red-500/5"
+              id={`issue-${issue.id}`}
+              className={`rounded-lg border border-red-200 bg-red-50/40 p-3 dark:border-red-900/50 dark:bg-red-500/5 ${
+                issue.id === highlightIssueId
+                  ? "ring-2 ring-indigo-400 dark:ring-indigo-500/50"
+                  : ""
+              }`}
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -147,7 +173,13 @@ export function IssueLog({
               )}
               {issue.task && (
                 <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                  Linked to {issue.task.wbsCode} {issue.task.name}
+                  Linked to{" "}
+                  <Link
+                    href={`/projects/${projectId}/wbs?highlight=${issue.task.id}`}
+                    className="text-indigo-600 hover:underline dark:text-indigo-400"
+                  >
+                    {issue.task.wbsCode} {issue.task.name}
+                  </Link>
                 </p>
               )}
               {canEdit && (
@@ -183,7 +215,12 @@ export function IssueLog({
             {resolved.map((issue) => (
               <div
                 key={issue.id}
-                className="rounded-lg border border-slate-200 p-3 opacity-70 dark:border-slate-800"
+                id={`issue-${issue.id}`}
+                className={`rounded-lg border border-slate-200 p-3 opacity-70 dark:border-slate-800 ${
+                  issue.id === highlightIssueId
+                    ? "opacity-100 ring-2 ring-indigo-400 dark:ring-indigo-500/50"
+                    : ""
+                }`}
               >
                 <h3 className="text-sm font-medium text-slate-700 line-through dark:text-slate-400">
                   {issue.title}
@@ -191,6 +228,17 @@ export function IssueLog({
                 {issue.resolution && (
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-500">
                     {issue.resolution}
+                  </p>
+                )}
+                {issue.task && (
+                  <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                    Linked to{" "}
+                    <Link
+                      href={`/projects/${projectId}/wbs?highlight=${issue.task.id}`}
+                      className="text-indigo-600 hover:underline dark:text-indigo-400"
+                    >
+                      {issue.task.wbsCode} {issue.task.name}
+                    </Link>
                   </p>
                 )}
               </div>

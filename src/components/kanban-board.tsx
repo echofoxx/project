@@ -21,6 +21,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
 import { Diamond, Lock } from "lucide-react";
+import { useHighlightTarget } from "@/hooks/use-highlight-target";
 
 type TaskStatus = "BACKLOG" | "IN_PROGRESS" | "REVIEW" | "DONE";
 
@@ -106,7 +107,7 @@ function TaskCard({ task, dragging }: { task: BoardTask; dragging?: boolean }) {
   );
 }
 
-function SortableCard({ task }: { task: BoardTask }) {
+function SortableCard({ task, highlighted }: { task: BoardTask; highlighted: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.id, data: { status: task.status } });
 
@@ -118,10 +119,13 @@ function SortableCard({ task }: { task: BoardTask }) {
   return (
     <div
       ref={setNodeRef}
+      id={`task-card-${task.id}`}
       style={style}
       {...attributes}
       {...listeners}
-      className={isDragging ? "opacity-30" : ""}
+      className={`rounded-md ${isDragging ? "opacity-30" : ""} ${
+        highlighted ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-100 dark:ring-offset-slate-900" : ""
+      }`}
     >
       <TaskCard task={task} />
     </div>
@@ -133,11 +137,13 @@ function Column({
   label,
   accent,
   tasks,
+  highlightTaskId,
 }: {
   status: TaskStatus;
   label: string;
   accent: string;
   tasks: BoardTask[];
+  highlightTaskId?: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
@@ -161,7 +167,7 @@ function Column({
           className="flex max-h-[calc(100vh-18rem)] min-h-[6rem] flex-col gap-2 overflow-y-auto p-1"
         >
           {tasks.map((task) => (
-            <SortableCard key={task.id} task={task} />
+            <SortableCard key={task.id} task={task} highlighted={task.id === highlightTaskId} />
           ))}
         </div>
       </SortableContext>
@@ -172,15 +178,19 @@ function Column({
 export function KanbanBoard({
   initialTasks,
   canEdit,
+  highlightTaskId,
 }: {
   initialTasks: BoardTask[];
   canEdit: boolean;
+  highlightTaskId?: string;
 }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
+
+  useHighlightTarget(highlightTaskId ? `task-card-${highlightTaskId}` : null);
 
   const collisionDetection: CollisionDetection = (args) => {
     const pointerCollisions = pointerWithin(args);
@@ -250,6 +260,7 @@ export function KanbanBoard({
             label={col.label}
             accent={col.accent}
             tasks={columns[col.status]}
+            highlightTaskId={highlightTaskId}
           />
         ))}
       </div>
