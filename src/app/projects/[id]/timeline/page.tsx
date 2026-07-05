@@ -30,6 +30,7 @@ export default async function TimelinePage({
         plannedEnd: task.plannedEnd?.toISOString() ?? null,
         actualStart: task.actualStart?.toISOString() ?? null,
         actualEnd: task.actualEnd?.toISOString() ?? null,
+        dependsOnTaskIds: task.dependsOn.map((d) => d.dependsOnTask.id),
       })),
   }));
 

@@ -15,6 +15,7 @@ type TimelineTask = {
   plannedEnd: string | null;
   actualStart: string | null;
   actualEnd: string | null;
+  dependsOnTaskIds: string[];
 };
 
 type TimelinePhase = {
@@ -43,6 +44,21 @@ function addDays(d: Date, n: number): Date {
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function effectiveRange(task: TimelineTask): { start: Date; end: Date } | null {
+  const start = task.actualStart
+    ? new Date(task.actualStart)
+    : task.plannedStart
+      ? new Date(task.plannedStart)
+      : null;
+  if (!start) return null;
+  const end = task.actualEnd
+    ? new Date(task.actualEnd)
+    : task.plannedEnd
+      ? new Date(task.plannedEnd)
+      : start;
+  return { start, end };
 }
 
 export function TimelineView({
@@ -93,6 +109,50 @@ export function TimelineView({
     return markers;
   }, [rangeStart, rangeEnd]);
 
+  // Row index (including phase header rows) for every task, plus its bar's
+  // start/end x-offset, so dependency connectors can be drawn between rows.
+  const { taskAnchors, bodyRowCount } = useMemo(() => {
+    const anchors = new Map<string, { row: number; startX: number; endX: number }>();
+    let row = 0;
+    for (const phase of phases) {
+      row += 1; // phase header row
+      for (const task of phase.tasks) {
+        const range = effectiveRange(task);
+        if (range) {
+          anchors.set(task.id, {
+            row,
+            startX: daysBetween(rangeStart, range.start) * PX_PER_DAY,
+            endX: daysBetween(rangeStart, range.end) * PX_PER_DAY,
+          });
+        }
+        row += 1;
+      }
+    }
+    return { taskAnchors: anchors, bodyRowCount: row };
+  }, [phases, rangeStart]);
+
+  const connectors = useMemo(() => {
+    const paths: { id: string; d: string; conflict: boolean }[] = [];
+    for (const phase of phases) {
+      for (const task of phase.tasks) {
+        const to = taskAnchors.get(task.id);
+        if (!to) continue;
+        for (const depId of task.dependsOnTaskIds) {
+          const from = taskAnchors.get(depId);
+          if (!from) continue;
+          const fromY = from.row * ROW_HEIGHT + ROW_HEIGHT / 2;
+          const toY = to.row * ROW_HEIGHT + ROW_HEIGHT / 2;
+          const fromX = from.endX;
+          const toX = to.startX;
+          const midX = fromX + Math.max(10, (toX - fromX) / 2);
+          const d = `M ${fromX} ${fromY} L ${midX} ${fromY} L ${midX} ${toY} L ${toX} ${toY}`;
+          paths.push({ id: `${depId}-${task.id}`, d, conflict: toX < fromX });
+        }
+      }
+    }
+    return paths;
+  }, [phases, taskAnchors]);
+
   return (
     <div className="rounded-lg border border-slate-200 bg-white">
       <Legend />
@@ -140,6 +200,33 @@ export function TimelineView({
                 ))}
               </div>
             ))}
+
+            {/* Dependency connectors, drawn between predecessor and successor bars */}
+            <svg
+              className="pointer-events-none absolute top-0 z-[5]"
+              style={{ left: LABEL_WIDTH }}
+              width={chartWidth}
+              height={bodyRowCount * ROW_HEIGHT}
+            >
+              <defs>
+                <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 0 L 8 4 L 0 8 z" fill="#94a3b8" />
+                </marker>
+                <marker id="arrow-conflict" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 0 L 8 4 L 0 8 z" fill="#ef4444" />
+                </marker>
+              </defs>
+              {connectors.map((c) => (
+                <path
+                  key={c.id}
+                  d={c.d}
+                  fill="none"
+                  stroke={c.conflict ? "#ef4444" : "#94a3b8"}
+                  strokeWidth={1.5}
+                  markerEnd={c.conflict ? "url(#arrow-conflict)" : "url(#arrow)"}
+                />
+              ))}
+            </svg>
 
             {/* Today line, spans the full body height */}
             {todayOffset >= 0 && todayOffset <= chartWidth && (

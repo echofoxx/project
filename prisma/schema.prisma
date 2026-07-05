@@ -116,8 +116,21 @@ model Task {
   assignee       User?      @relation("TaskAssignee", fields: [assigneeId], references: [id])
   order          Int        @default(0)
   issues         Issue[]
+  dependsOn      TaskDependency[] @relation("Successor")
+  blocks         TaskDependency[] @relation("Predecessor")
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
+}
+
+model TaskDependency {
+  id               String   @id @default(cuid())
+  taskId           String
+  task             Task     @relation("Successor", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOnTaskId  String
+  dependsOnTask    Task     @relation("Predecessor", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+
+  @@unique([taskId, dependsOnTaskId])
 }
 
 model Issue {

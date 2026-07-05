@@ -29,6 +29,13 @@ export default async function WbsPage({
         plannedStart: task.plannedStart?.toISOString().slice(0, 10) ?? "",
         plannedEnd: task.plannedEnd?.toISOString().slice(0, 10) ?? "",
         assigneeId: task.assigneeId,
+        dependsOn: task.dependsOn.map((d) => ({
+          dependencyId: d.id,
+          taskId: d.dependsOnTask.id,
+          wbsCode: d.dependsOnTask.wbsCode,
+          name: d.dependsOnTask.name,
+          status: d.dependsOnTask.status,
+        })),
       })),
   }));
 
@@ -37,11 +44,17 @@ export default async function WbsPage({
     name: m.user.name,
   }));
 
+  const allTasks = project.phases
+    .flatMap((phase) => phase.tasks)
+    .filter((t) => !t.parentTaskId)
+    .map((t) => ({ id: t.id, wbsCode: t.wbsCode, name: t.name }));
+
   return (
     <WbsTable
       projectId={id}
       initialPhases={phases}
       members={members}
+      allTasks={allTasks}
       canEdit={membership.role !== "VIEWER"}
     />
   );

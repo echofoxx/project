@@ -25,6 +25,13 @@ export async function getProjectBoardData(projectId: string) {
             orderBy: { order: "asc" },
             include: {
               assignee: { select: { id: true, name: true, email: true } },
+              dependsOn: {
+                include: {
+                  dependsOnTask: {
+                    select: { id: true, name: true, wbsCode: true, status: true },
+                  },
+                },
+              },
             },
           },
         },

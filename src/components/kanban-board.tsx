@@ -33,6 +33,7 @@ type BoardTask = {
   plannedEnd: string | null;
   assignee: { id: string; name: string; email: string } | null;
   phaseName: string;
+  isBlocked: boolean;
 };
 
 const COLUMNS: { status: TaskStatus; label: string; accent: string }[] = [
@@ -57,11 +58,21 @@ function TaskCard({ task, dragging }: { task: BoardTask; dragging?: boolean }) {
     >
       <div className="flex items-start justify-between gap-2">
         <span className="font-medium text-slate-800">{task.name}</span>
-        {task.isMilestone && (
-          <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
-            milestone
-          </span>
-        )}
+        <span className="flex shrink-0 gap-1">
+          {task.isBlocked && (
+            <span
+              className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700"
+              title="Waiting on an unfinished dependency"
+            >
+              blocked
+            </span>
+          )}
+          {task.isMilestone && (
+            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+              milestone
+            </span>
+          )}
+        </span>
       </div>
       <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
         <span>{task.phaseName}</span>

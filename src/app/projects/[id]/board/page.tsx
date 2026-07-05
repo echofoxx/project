@@ -26,6 +26,7 @@ export default async function BoardPage({
         plannedEnd: task.plannedEnd?.toISOString() ?? null,
         assignee: task.assignee,
         phaseName: phase.name,
+        isBlocked: task.dependsOn.some((d) => d.dependsOnTask.status !== "DONE"),
       })),
   );
 
