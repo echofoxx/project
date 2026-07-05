@@ -135,6 +135,8 @@ The app is then available at <http://localhost:3000>.
 - [x] Complete → reuse as template
 - [x] Dark mode
 - [x] Automated test suite (Vitest) and Docker deployment
+- [x] Installable PWA — manifest, service worker with an offline fallback
+      page, and a swipeable Kanban board on phone-sized screens
 
 **Planned**
 - [ ] **Proper team invites** — invite by email without requiring the
@@ -143,25 +145,28 @@ The app is then available at <http://localhost:3000>.
       to you
 - [ ] **Production hardening** — rate limiting on auth endpoints, structured
       logging, broader test coverage on the route handlers
-- [ ] **Mobile app** — see below; direction is still being decided
+- [ ] **Mobile-first WBS and Gantt views** — the table and timeline still
+      rely on horizontal scrolling on narrow screens; a card-style layout
+      for phones is the next mobile increment (see below)
 
-### Mobile app — under evaluation
+### Mobile app
 
-The web app is usable on a phone browser today, but the dense views (WBS
-table, Gantt timeline) aren't built mobile-first. Options being weighed,
-roughly in order of effort:
+Direction: **PWA**, built on top of the existing Next.js app rather than a
+separate codebase. Shipped so far:
 
-1. **PWA** (installable web app, offline-friendly shell) — reuses 100% of
-   the existing code and backend; mainly UI work to add mobile-optimized
-   layouts for the board/task list plus a manifest and service worker.
-2. **React Native / Expo app** — native UX and push notifications, talking
-   to the same API routes, but a separate codebase and UI built from
-   scratch for phone-sized screens.
-3. **Capacitor/Ionic wrapper** — native app shell around the existing web
-   UI; less native-feeling than option 2, less work than a full rewrite.
+- A web app manifest and generated icons, so the app is installable to a
+  phone's home screen with its own icon and standalone window (no browser
+  chrome)
+- A service worker that precaches an offline fallback page and caches
+  static assets, so a lost connection shows a friendly "you're offline"
+  screen instead of a browser error
+- A swipeable, snap-scrolling Kanban board layout at phone widths
 
-No implementation has started yet — this section will be updated once a
-direction is chosen.
+Still open: the WBS table and Gantt timeline are usable on mobile via
+horizontal scroll but aren't card-based yet — that's the next piece of
+mobile work. React Native/Expo and Capacitor were considered but ruled
+out for now since a PWA reuses the existing backend and UI with no
+separate codebase to maintain.
 
 ## License
 

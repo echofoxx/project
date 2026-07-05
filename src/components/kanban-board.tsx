@@ -143,7 +143,7 @@ function Column({
 
   return (
     <div
-      className={`flex w-72 shrink-0 flex-col rounded-lg bg-slate-100 p-2 dark:bg-slate-900/60 ${
+      className={`flex w-[85vw] shrink-0 snap-center flex-col rounded-lg bg-slate-100 p-2 dark:bg-slate-900/60 sm:w-72 ${
         isOver ? "ring-2 ring-indigo-400" : ""
       }`}
     >
@@ -242,7 +242,7 @@ export function KanbanBoard({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 sm:snap-none">
         {COLUMNS.map((col) => (
           <Column
             key={col.status}
