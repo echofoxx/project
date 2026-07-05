@@ -91,6 +91,7 @@ The app is then available at <http://localhost:3000>.
 | `npm run build` | Production build |
 | `npm start` | Start the production build |
 | `npm run lint` | Run ESLint |
+| `npm test` | Run the automated test suite (Vitest) |
 | `npm run db:migrate` | Apply Prisma migrations (`prisma migrate deploy`) |
 | `npm run db:seed` | Seed the built-in starter templates |
 
