@@ -75,14 +75,16 @@ function TaskCard({
         {projectId ? (
           <Link
             href={`/projects/${projectId}/tasks/${task.id}`}
-            className="font-medium text-slate-800 hover:text-indigo-600 hover:underline dark:text-slate-200 dark:hover:text-indigo-400"
+            className="min-w-0 break-words font-medium text-slate-800 hover:text-indigo-600 hover:underline dark:text-slate-200 dark:hover:text-indigo-400"
           >
             {task.name}
           </Link>
         ) : (
-          <span className="font-medium text-slate-800 dark:text-slate-200">{task.name}</span>
+          <span className="min-w-0 break-words font-medium text-slate-800 dark:text-slate-200">
+            {task.name}
+          </span>
         )}
-        <span className="flex shrink-0 gap-1">
+        <span className="flex shrink-0 flex-wrap justify-end gap-1">
           {task.isBlocked && (
             <span
               className="flex items-center gap-0.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-500/15 dark:text-red-400"
@@ -100,13 +102,13 @@ function TaskCard({
           )}
         </span>
       </div>
-      <div className="mt-2 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
-        <span>{task.phaseName}</span>
-        <span>{task.wbsCode}</span>
+      <div className="mt-2 flex items-center justify-between gap-2 text-xs text-slate-400 dark:text-slate-500">
+        <span className="min-w-0 truncate">{task.phaseName}</span>
+        <span className="shrink-0">{task.wbsCode}</span>
       </div>
-      <div className="mt-2 flex items-center justify-between">
+      <div className="mt-2 flex items-center justify-between gap-2">
         <span
-          className={`text-xs ${overdue ? "font-medium text-red-600 dark:text-red-400" : "text-slate-400 dark:text-slate-500"}`}
+          className={`min-w-0 truncate text-xs ${overdue ? "font-medium text-red-600 dark:text-red-400" : "text-slate-400 dark:text-slate-500"}`}
         >
           {task.plannedEnd
             ? new Date(task.plannedEnd).toLocaleDateString()
@@ -177,14 +179,14 @@ function Column({
 
   return (
     <div
-      className={`flex w-[85vw] shrink-0 snap-center flex-col rounded-lg bg-slate-100 p-2 dark:bg-slate-900/60 sm:w-72 ${
+      className={`flex w-[85vw] min-w-0 shrink-0 snap-center flex-col rounded-lg bg-slate-100 p-2 dark:bg-slate-900/60 sm:w-full sm:shrink ${
         isOver ? "ring-2 ring-indigo-400" : ""
       }`}
     >
-      <div className="flex items-center gap-2 px-1 py-1.5">
-        <span className={`h-2 w-2 rounded-full ${accent}`} />
-        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{label}</h3>
-        <span className="ml-auto text-xs text-slate-400 dark:text-slate-500">{tasks.length}</span>
+      <div className="flex min-w-0 items-center gap-2 px-1 py-1.5">
+        <span className={`h-2 w-2 shrink-0 rounded-full ${accent}`} />
+        <h3 className="truncate text-sm font-semibold text-slate-700 dark:text-slate-300">{label}</h3>
+        <span className="ml-auto shrink-0 text-xs text-slate-400 dark:text-slate-500">{tasks.length}</span>
       </div>
       <SortableContext
         items={tasks.map((t) => t.id)}
@@ -287,7 +289,7 @@ export function KanbanBoard({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 sm:snap-none">
+      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-4 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible sm:pb-0 sm:snap-none">
         {COLUMNS.map((col) => (
           <Column
             key={col.status}
