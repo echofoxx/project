@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
+import Link from "next/link";
 import { Diamond, Lock } from "lucide-react";
 import { useHighlightTarget } from "@/hooks/use-highlight-target";
 
@@ -54,7 +55,15 @@ function isOverdue(task: BoardTask) {
   return new Date(task.plannedEnd) < new Date(new Date().toDateString());
 }
 
-function TaskCard({ task, dragging }: { task: BoardTask; dragging?: boolean }) {
+function TaskCard({
+  task,
+  projectId,
+  dragging,
+}: {
+  task: BoardTask;
+  projectId?: string;
+  dragging?: boolean;
+}) {
   const overdue = isOverdue(task);
   return (
     <div
@@ -63,7 +72,16 @@ function TaskCard({ task, dragging }: { task: BoardTask; dragging?: boolean }) {
       } ${BORDER_BY_STATUS[task.status]}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="font-medium text-slate-800 dark:text-slate-200">{task.name}</span>
+        {projectId ? (
+          <Link
+            href={`/projects/${projectId}/tasks/${task.id}`}
+            className="font-medium text-slate-800 hover:text-indigo-600 hover:underline dark:text-slate-200 dark:hover:text-indigo-400"
+          >
+            {task.name}
+          </Link>
+        ) : (
+          <span className="font-medium text-slate-800 dark:text-slate-200">{task.name}</span>
+        )}
         <span className="flex shrink-0 gap-1">
           {task.isBlocked && (
             <span
@@ -107,7 +125,15 @@ function TaskCard({ task, dragging }: { task: BoardTask; dragging?: boolean }) {
   );
 }
 
-function SortableCard({ task, highlighted }: { task: BoardTask; highlighted: boolean }) {
+function SortableCard({
+  task,
+  projectId,
+  highlighted,
+}: {
+  task: BoardTask;
+  projectId: string;
+  highlighted: boolean;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.id, data: { status: task.status } });
 
@@ -127,7 +153,7 @@ function SortableCard({ task, highlighted }: { task: BoardTask; highlighted: boo
         highlighted ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-100 dark:ring-offset-slate-900" : ""
       }`}
     >
-      <TaskCard task={task} />
+      <TaskCard task={task} projectId={projectId} />
     </div>
   );
 }
@@ -137,12 +163,14 @@ function Column({
   label,
   accent,
   tasks,
+  projectId,
   highlightTaskId,
 }: {
   status: TaskStatus;
   label: string;
   accent: string;
   tasks: BoardTask[];
+  projectId: string;
   highlightTaskId?: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
@@ -167,7 +195,12 @@ function Column({
           className="flex max-h-[calc(100vh-18rem)] min-h-[6rem] flex-col gap-2 overflow-y-auto p-1"
         >
           {tasks.map((task) => (
-            <SortableCard key={task.id} task={task} highlighted={task.id === highlightTaskId} />
+            <SortableCard
+              key={task.id}
+              task={task}
+              projectId={projectId}
+              highlighted={task.id === highlightTaskId}
+            />
           ))}
         </div>
       </SortableContext>
@@ -176,10 +209,12 @@ function Column({
 }
 
 export function KanbanBoard({
+  projectId,
   initialTasks,
   canEdit,
   highlightTaskId,
 }: {
+  projectId: string;
   initialTasks: BoardTask[];
   canEdit: boolean;
   highlightTaskId?: string;
@@ -260,6 +295,7 @@ export function KanbanBoard({
             label={col.label}
             accent={col.accent}
             tasks={columns[col.status]}
+            projectId={projectId}
             highlightTaskId={highlightTaskId}
           />
         ))}

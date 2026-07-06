@@ -48,6 +48,7 @@ export default async function TimelinePage({
 
   return (
     <TimelineView
+      projectId={id}
       phases={phases}
       projectStart={project.startDate?.toISOString() ?? null}
       projectEnd={project.endDate?.toISOString() ?? null}

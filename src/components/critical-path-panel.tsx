@@ -73,7 +73,7 @@ export function CriticalPathPanel({
                   {i + 1}
                 </span>
                 <Link
-                  href={`/projects/${projectId}/wbs?highlight=${task.id}`}
+                  href={`/projects/${projectId}/tasks/${task.id}`}
                   className="flex-1 truncate text-slate-700 hover:text-indigo-600 hover:underline dark:text-slate-300 dark:hover:text-indigo-400"
                 >
                   {task.wbsCode} {task.name}

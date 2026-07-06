@@ -27,6 +27,7 @@ export default async function WbsPage({
         name: task.name,
         wbsCode: task.wbsCode,
         status: task.status,
+        priority: task.priority,
         isMilestone: task.isMilestone,
         percentComplete: task.percentComplete,
         plannedStart: task.plannedStart?.toISOString().slice(0, 10) ?? "",

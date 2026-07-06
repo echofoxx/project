@@ -40,6 +40,13 @@ enum IssueStatus {
   RESOLVED
 }
 
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 model User {
   id             String          @id @default(cuid())
   name           String
@@ -49,6 +56,7 @@ model User {
   memberships    ProjectMember[]
   assignedTasks  Task[]          @relation("TaskAssignee")
   ownedProjects  Project[]       @relation("ProjectOwner")
+  taskNotes      TaskNote[]      @relation("TaskNoteAuthor")
 }
 
 model Project {
@@ -106,20 +114,34 @@ model Task {
   wbsCode        String
   description    String?
   status         TaskStatus @default(BACKLOG)
+  priority       TaskPriority @default(MEDIUM)
   isMilestone    Boolean    @default(false)
   plannedStart   DateTime?
   plannedEnd     DateTime?
   actualStart    DateTime?
   actualEnd      DateTime?
   percentComplete Int       @default(0)
+  estimatedHours Float?
   assigneeId     String?
   assignee       User?      @relation("TaskAssignee", fields: [assigneeId], references: [id])
   order          Int        @default(0)
   issues         Issue[]
+  notes          TaskNote[]
   dependsOn      TaskDependency[] @relation("Successor")
   blocks         TaskDependency[] @relation("Predecessor")
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
+}
+
+model TaskNote {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("TaskNoteAuthor", fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model TaskDependency {

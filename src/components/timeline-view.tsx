@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { Flame } from "lucide-react";
 
 type TaskStatus = "BACKLOG" | "IN_PROGRESS" | "REVIEW" | "DONE";
@@ -63,11 +64,13 @@ function effectiveRange(task: TimelineTask): { start: Date; end: Date } | null {
 }
 
 export function TimelineView({
+  projectId,
   phases,
   projectStart,
   projectEnd,
   criticalTaskIds = [],
 }: {
+  projectId: string;
   phases: TimelinePhase[];
   projectStart: string | null;
   projectEnd: string | null;
@@ -202,6 +205,7 @@ export function TimelineView({
                 {phase.tasks.map((task) => (
                   <TimelineRow
                     key={task.id}
+                    projectId={projectId}
                     task={task}
                     rangeStart={rangeStart}
                     chartWidth={chartWidth}
@@ -254,11 +258,13 @@ export function TimelineView({
 }
 
 function TimelineRow({
+  projectId,
   task,
   rangeStart,
   chartWidth,
   isCritical,
 }: {
+  projectId: string;
   task: TimelineTask;
   rangeStart: Date;
   chartWidth: number;
@@ -306,7 +312,12 @@ function TimelineRow({
         style={{ width: LABEL_WIDTH, height: ROW_HEIGHT }}
       >
         <span className="shrink-0 font-mono text-xs text-slate-400 dark:text-slate-500">{task.wbsCode}</span>
-        <span className="truncate">{task.name}</span>
+        <Link
+          href={`/projects/${projectId}/tasks/${task.id}`}
+          className="truncate hover:text-indigo-600 hover:underline dark:hover:text-indigo-400"
+        >
+          {task.name}
+        </Link>
         {isCritical && (
           <span
             title="On the critical path - any delay here pushes the project end date out"

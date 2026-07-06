@@ -7,6 +7,7 @@ import { computeDerivedTaskFields, toDate } from "@/lib/task-update";
 
 const updateSchema = z.object({
   status: z.enum(["BACKLOG", "IN_PROGRESS", "REVIEW", "DONE"]).optional(),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
   order: z.number().int().optional(),
   phaseId: z.string().optional(),
   name: z.string().min(1).max(200).optional(),
@@ -14,6 +15,7 @@ const updateSchema = z.object({
   assigneeId: z.string().nullable().optional(),
   isMilestone: z.boolean().optional(),
   percentComplete: z.number().int().min(0).max(100).optional(),
+  estimatedHours: z.number().min(0).max(10000).nullable().optional(),
   plannedStart: z.string().nullable().optional(),
   plannedEnd: z.string().nullable().optional(),
   actualStart: z.string().nullable().optional(),

@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Diamond, Lock, Plus, Trash2, X } from "lucide-react";
+import Link from "next/link";
+import { Diamond, Lock, Pencil, Plus, Trash2, X } from "lucide-react";
 import { isBlockedByDependencies } from "@/lib/dependency-status";
 import { useHighlightTarget } from "@/hooks/use-highlight-target";
 
 type TaskStatus = "BACKLOG" | "IN_PROGRESS" | "REVIEW" | "DONE";
+type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 type Dependency = {
   dependencyId: string;
@@ -20,6 +22,7 @@ type WbsTask = {
   name: string;
   wbsCode: string;
   status: TaskStatus;
+  priority: TaskPriority;
   isMilestone: boolean;
   percentComplete: number;
   plannedStart: string;
@@ -45,6 +48,13 @@ const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
   { value: "DONE", label: "Done" },
 ];
 
+const PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
+  { value: "LOW", label: "Low" },
+  { value: "MEDIUM", label: "Medium" },
+  { value: "HIGH", label: "High" },
+  { value: "URGENT", label: "Urgent" },
+];
+
 const cellClass = "px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300";
 const inputClass =
   "w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-sm text-slate-700 hover:border-slate-200 focus:border-indigo-400 focus:outline-none dark:text-slate-300 dark:hover:border-slate-700 dark:[color-scheme:dark]";
@@ -53,6 +63,79 @@ function phaseProgress(phase: WbsPhase) {
   if (phase.tasks.length === 0) return 0;
   const sum = phase.tasks.reduce((n, t) => n + t.percentComplete, 0);
   return Math.round(sum / phase.tasks.length);
+}
+
+function TaskNameCell({
+  projectId,
+  task,
+  canEdit,
+  onRename,
+}: {
+  projectId: string;
+  task: WbsTask;
+  canEdit: boolean;
+  onRename: (name: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(task.name);
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          setEditing(false);
+          const trimmed = draft.trim();
+          if (trimmed && trimmed !== task.name) onRename(trimmed);
+          else setDraft(task.name);
+        }}
+        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+        className={inputClass}
+      />
+    );
+  }
+
+  return (
+    <div className="flex items-start gap-1.5">
+      <Link
+        href={`/projects/${projectId}/tasks/${task.id}`}
+        className="min-w-0 flex-1 whitespace-normal break-words text-slate-700 hover:text-indigo-600 hover:underline dark:text-slate-300 dark:hover:text-indigo-400"
+      >
+        {task.name}
+      </Link>
+      <span className="flex shrink-0 flex-wrap items-center gap-1 pt-0.5">
+        {task.isMilestone && (
+          <span className="inline-flex items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+            <Diamond className="h-2.5 w-2.5" />
+            milestone
+          </span>
+        )}
+        {isBlockedByDependencies(task.dependsOn) && (
+          <span
+            className="inline-flex items-center gap-0.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] text-red-700 dark:bg-red-500/15 dark:text-red-400"
+            title="Waiting on an unfinished dependency"
+          >
+            <Lock className="h-2.5 w-2.5" />
+            blocked
+          </span>
+        )}
+        {canEdit && (
+          <button
+            onClick={() => {
+              setDraft(task.name);
+              setEditing(true);
+            }}
+            className="text-slate-300 hover:text-indigo-500 dark:text-slate-600"
+            title="Rename"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+        )}
+      </span>
+    </div>
+  );
 }
 
 export function WbsTable({
@@ -129,6 +212,7 @@ export function WbsTable({
                   name: task.name,
                   wbsCode: task.wbsCode,
                   status: task.status,
+                  priority: task.priority,
                   isMilestone: task.isMilestone,
                   percentComplete: task.percentComplete,
                   plannedStart: "",
@@ -212,12 +296,13 @@ export function WbsTable({
 
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-      <table className="w-full min-w-[900px] border-collapse">
+      <table className="w-full min-w-[1300px] border-collapse">
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
             <th className="w-16 px-2 py-2">WBS</th>
-            <th className="px-2 py-2">Task</th>
+            <th className="min-w-[16rem] px-2 py-2">Task</th>
             <th className="w-36 px-2 py-2">Status</th>
+            <th className="w-28 px-2 py-2">Priority</th>
             <th className="w-36 px-2 py-2">Owner</th>
             <th className="w-32 px-2 py-2">Start</th>
             <th className="w-32 px-2 py-2">Due</th>
@@ -230,6 +315,7 @@ export function WbsTable({
           {phases.map((phase) => (
             <PhaseRows
               key={phase.id}
+              projectId={projectId}
               phase={phase}
               members={members}
               allTasks={allTasks}
@@ -276,6 +362,7 @@ export function WbsTable({
 }
 
 function PhaseRows({
+  projectId,
   phase,
   members,
   allTasks,
@@ -290,6 +377,7 @@ function PhaseRows({
   depErrors,
   highlightTaskId,
 }: {
+  projectId: string;
   phase: WbsPhase;
   members: Member[];
   allTasks: TaskOption[];
@@ -309,7 +397,7 @@ function PhaseRows({
     <>
       <tr className="border-b border-slate-100 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/30">
         <td className={cellClass + " font-mono text-slate-400 dark:text-slate-500"}>{phase.wbsCode}</td>
-        <td className={cellClass + " font-semibold text-slate-800 dark:text-slate-200"} colSpan={5}>
+        <td className={cellClass + " font-semibold text-slate-800 dark:text-slate-200"} colSpan={6}>
           {phase.name}
         </td>
         <td className={cellClass + " text-slate-500 dark:text-slate-400"}>{progress}%</td>
@@ -329,32 +417,13 @@ function PhaseRows({
           <td className={cellClass + " font-mono text-xs text-slate-400 dark:text-slate-500"}>
             {task.wbsCode}
           </td>
-          <td className={cellClass}>
-            <input
-              defaultValue={task.name}
-              disabled={!canEdit}
-              onBlur={(e) => {
-                if (e.target.value.trim() && e.target.value !== task.name) {
-                  onUpdateTask(task.id, { name: e.target.value.trim() });
-                }
-              }}
-              className={inputClass}
+          <td className={cellClass + " align-top"}>
+            <TaskNameCell
+              projectId={projectId}
+              task={task}
+              canEdit={canEdit}
+              onRename={(name) => onUpdateTask(task.id, { name })}
             />
-            {task.isMilestone && (
-              <span className="ml-1 inline-flex items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-                <Diamond className="h-2.5 w-2.5" />
-                milestone
-              </span>
-            )}
-            {isBlockedByDependencies(task.dependsOn) && (
-              <span
-                className="ml-1 inline-flex items-center gap-0.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] text-red-700 dark:bg-red-500/15 dark:text-red-400"
-                title="Waiting on an unfinished dependency"
-              >
-                <Lock className="h-2.5 w-2.5" />
-                blocked
-              </span>
-            )}
           </td>
           <td className={cellClass}>
             <select
@@ -368,6 +437,22 @@ function PhaseRows({
               {STATUS_OPTIONS.map((s) => (
                 <option key={s.value} value={s.value}>
                   {s.label}
+                </option>
+              ))}
+            </select>
+          </td>
+          <td className={cellClass}>
+            <select
+              value={task.priority}
+              disabled={!canEdit}
+              onChange={(e) =>
+                onUpdateTask(task.id, { priority: e.target.value as TaskPriority })
+              }
+              className={inputClass}
+            >
+              {PRIORITY_OPTIONS.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
                 </option>
               ))}
             </select>
@@ -488,7 +573,7 @@ function PhaseRows({
       {canEdit && (
         <tr className="border-b border-slate-100 dark:border-slate-800">
           <td className={cellClass}></td>
-          <td className={cellClass} colSpan={8}>
+          <td className={cellClass} colSpan={9}>
             <input
               value={newTaskName}
               onChange={(e) => onNewTaskNameChange(e.target.value)}

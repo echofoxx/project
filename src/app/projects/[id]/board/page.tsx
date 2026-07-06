@@ -35,6 +35,7 @@ export default async function BoardPage({
 
   return (
     <KanbanBoard
+      projectId={id}
       initialTasks={tasks}
       canEdit={membership.role !== "VIEWER"}
       highlightTaskId={highlight}

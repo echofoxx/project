@@ -223,7 +223,7 @@ export function IssueLog({
                 <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                   Linked to{" "}
                   <Link
-                    href={`/projects/${projectId}/wbs?highlight=${issue.task.id}`}
+                    href={`/projects/${projectId}/tasks/${issue.task.id}`}
                     className="text-indigo-600 hover:underline dark:text-indigo-400"
                   >
                     {issue.task.wbsCode} {issue.task.name}
@@ -282,7 +282,7 @@ export function IssueLog({
                   <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                     Linked to{" "}
                     <Link
-                      href={`/projects/${projectId}/wbs?highlight=${issue.task.id}`}
+                      href={`/projects/${projectId}/tasks/${issue.task.id}`}
                       className="text-indigo-600 hover:underline dark:text-indigo-400"
                     >
                       {issue.task.wbsCode} {issue.task.name}

@@ -238,7 +238,7 @@ export function ReportDashboard({
                   <tr key={task.id} className="border-t border-slate-50 dark:border-slate-800">
                     <td className="px-4 py-2 text-slate-700 dark:text-slate-300">
                       <Link
-                        href={`/projects/${projectId}/wbs?highlight=${task.id}`}
+                        href={`/projects/${projectId}/tasks/${task.id}`}
                         className="hover:text-indigo-600 hover:underline dark:hover:text-indigo-400"
                       >
                         {task.wbsCode} {task.name}
@@ -254,7 +254,7 @@ export function ReportDashboard({
                           {task.dependsOn.map((dep) => (
                             <li key={dep.id}>
                               <Link
-                                href={`/projects/${projectId}/wbs?highlight=${dep.id}`}
+                                href={`/projects/${projectId}/tasks/${dep.id}`}
                                 className="block truncate rounded px-1 py-0.5 text-xs text-indigo-600 hover:bg-slate-50 hover:underline dark:text-indigo-400 dark:hover:bg-slate-800"
                               >
                                 {dep.wbsCode} {dep.name}
@@ -266,7 +266,7 @@ export function ReportDashboard({
                           {task.blocks.map((b) => (
                             <li key={b.id}>
                               <Link
-                                href={`/projects/${projectId}/wbs?highlight=${b.id}`}
+                                href={`/projects/${projectId}/tasks/${b.id}`}
                                 className="block truncate rounded px-1 py-0.5 text-xs text-indigo-600 hover:bg-slate-50 hover:underline dark:text-indigo-400 dark:hover:bg-slate-800"
                               >
                                 {b.wbsCode} {b.name}
