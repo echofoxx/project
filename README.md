@@ -111,6 +111,22 @@ npm run dev
 
 The app is then available at <http://localhost:3000>.
 
+## Standalone single-file version
+
+[`standalone/index.html`](./standalone/index.html) is a self-contained,
+offline-friendly alternative — no server, no database, no build step. Open the
+file directly in a browser and it works, storing everything in that browser's
+`localStorage`. It's a companion for quick local use, not a replacement for
+the full app above.
+
+It covers most of the same ground: project templates (Software/Home/Auto/
+Event/Custom), Kanban board with drag-and-drop, WBS with dependencies, Gantt
+timeline with critical-path highlighting, issue log with aging buckets, and
+the full report suite (KPI drill-down, burnup chart, critical path, cycle
+time, CSV export). It intentionally leaves out things that need a real
+backend: multi-user accounts and roles, file attachments, and the AI-assisted
+kickoff.
+
 ## Scripts
 
 | Command | Description |
