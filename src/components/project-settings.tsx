@@ -2,28 +2,52 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Copy, Download, Upload, UserPlus, Users } from "lucide-react";
-import { addProjectMember, completeProject, cloneProjectAsTemplate } from "@/app/actions/projects";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Copy,
+  Download,
+  Trash2,
+  Upload,
+  UserPlus,
+  Users,
+} from "lucide-react";
+import {
+  addProjectMember,
+  changeProjectMemberRole,
+  completeProject,
+  cloneProjectAsTemplate,
+  deleteProject,
+  removeProjectMember,
+} from "@/app/actions/projects";
 
-type Member = { id: string; role: string; name: string; email: string };
+type Role = "OWNER" | "EDITOR" | "VIEWER";
+type Member = { userId: string; role: string; name: string; email: string };
 
 export function ProjectSettings({
   projectId,
+  projectName,
   isOwner,
+  currentUserId,
   status,
   lessonsLearned,
   members,
 }: {
   projectId: string;
+  projectName: string;
   isOwner: boolean;
+  currentUserId: string;
   status: string;
   lessonsLearned: string;
   members: Member[];
 }) {
   const [memberList, setMemberList] = useState(members);
   const [memberEmail, setMemberEmail] = useState("");
+  const [memberRole, setMemberRole] = useState<Role>("EDITOR");
   const [memberError, setMemberError] = useState<string | null>(null);
   const [memberPending, startMemberTransition] = useTransition();
+  const [rowPendingId, setRowPendingId] = useState<string | null>(null);
+  const [rowError, setRowError] = useState<string | null>(null);
 
   const [lessons, setLessons] = useState(lessonsLearned);
   const [completePending, startCompleteTransition] = useTransition();
@@ -35,22 +59,66 @@ export function ProjectSettings({
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const [importPending, setImportPending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [confirmName, setConfirmName] = useState("");
+  const [deletePending, startDeleteTransition] = useTransition();
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const router = useRouter();
+  const ownerCount = memberList.filter((m) => m.role === "OWNER").length;
 
   function handleAddMember(e: React.FormEvent) {
     e.preventDefault();
     setMemberError(null);
     startMemberTransition(async () => {
-      const result = await addProjectMember(projectId, memberEmail);
+      const result = await addProjectMember(projectId, memberEmail, memberRole);
       if (result?.error) {
         setMemberError(result.error);
         return;
       }
-      setMemberList((prev) => [
-        ...prev,
-        { id: crypto.randomUUID(), role: "EDITOR", name: memberEmail, email: memberEmail },
-      ]);
+      if (result?.member) {
+        setMemberList((prev) => [
+          ...prev.filter((m) => m.userId !== result.member!.id),
+          {
+            userId: result.member.id,
+            role: result.member.role,
+            name: result.member.name,
+            email: result.member.email,
+          },
+        ]);
+      }
       setMemberEmail("");
+      setMemberRole("EDITOR");
+      router.refresh();
+    });
+  }
+
+  function handleRoleChange(userId: string, role: Role) {
+    setRowError(null);
+    setRowPendingId(userId);
+    startMemberTransition(async () => {
+      const result = await changeProjectMemberRole(projectId, userId, role);
+      setRowPendingId(null);
+      if (result?.error) {
+        setRowError(result.error);
+        return;
+      }
+      setMemberList((prev) => prev.map((m) => (m.userId === userId ? { ...m, role } : m)));
+      router.refresh();
+    });
+  }
+
+  function handleRemoveMember(userId: string) {
+    setRowError(null);
+    setRowPendingId(userId);
+    startMemberTransition(async () => {
+      const result = await removeProjectMember(projectId, userId);
+      setRowPendingId(null);
+      if (result?.error) {
+        setRowError(result.error);
+        return;
+      }
+      setMemberList((prev) => prev.filter((m) => m.userId !== userId));
       router.refresh();
     });
   }
@@ -68,6 +136,19 @@ export function ProjectSettings({
     startCloneTransition(async () => {
       await cloneProjectAsTemplate(projectId);
       setCloneMessage("Saved as a reusable template for future projects.");
+    });
+  }
+
+  function handleDelete() {
+    setDeleteError(null);
+    startDeleteTransition(async () => {
+      try {
+        await deleteProject(projectId);
+      } catch (err) {
+        const digest = (err as { digest?: string })?.digest;
+        if (digest?.startsWith("NEXT_REDIRECT")) throw err;
+        setDeleteError("Failed to delete project.");
+      }
     });
   }
 
@@ -148,24 +229,66 @@ export function ProjectSettings({
         </h2>
         <ul className="mt-3 space-y-1.5">
           {memberList.map((m) => (
-            <li key={m.id} className="flex items-center justify-between text-sm">
-              <span className="text-slate-700 dark:text-slate-300">{m.name || m.email}</span>
-              <span className="text-xs uppercase text-slate-400 dark:text-slate-500">
-                {m.role}
+            <li key={m.userId} className="flex items-center justify-between gap-2 text-sm">
+              <span className="min-w-0 truncate text-slate-700 dark:text-slate-300">
+                {m.name || m.email}
+                {m.userId === currentUserId && (
+                  <span className="ml-1 text-xs text-slate-400 dark:text-slate-500">(you)</span>
+                )}
               </span>
+              {isOwner ? (
+                <div className="flex shrink-0 items-center gap-2">
+                  <select
+                    value={m.role}
+                    disabled={rowPendingId === m.userId}
+                    onChange={(e) => handleRoleChange(m.userId, e.target.value as Role)}
+                    className="rounded-md border border-slate-300 bg-white px-1.5 py-0.5 text-xs uppercase text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:[color-scheme:dark]"
+                  >
+                    <option value="OWNER">Owner</option>
+                    <option value="EDITOR">Editor</option>
+                    <option value="VIEWER">Viewer</option>
+                  </select>
+                  <button
+                    type="button"
+                    title="Remove from project"
+                    disabled={
+                      rowPendingId === m.userId ||
+                      (m.role === "OWNER" && ownerCount <= 1)
+                    }
+                    onClick={() => handleRemoveMember(m.userId)}
+                    className="rounded-md p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <span className="shrink-0 text-xs uppercase text-slate-400 dark:text-slate-500">
+                  {m.role}
+                </span>
+              )}
             </li>
           ))}
         </ul>
+        {rowError && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{rowError}</p>}
         {isOwner && (
-          <form onSubmit={handleAddMember} className="mt-3 flex items-center gap-2">
+          <form onSubmit={handleAddMember} className="mt-3 flex flex-wrap items-center gap-2">
             <input
               type="email"
               required
               value={memberEmail}
               onChange={(e) => setMemberEmail(e.target.value)}
               placeholder="teammate@email.com"
-              className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             />
+            <select
+              value={memberRole}
+              onChange={(e) => setMemberRole(e.target.value as Role)}
+              className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:[color-scheme:dark]"
+            >
+              <option value="EDITOR">Editor</option>
+              <option value="VIEWER">Viewer</option>
+              <option value="OWNER">Owner</option>
+            </select>
             <button
               type="submit"
               disabled={memberPending}
@@ -225,6 +348,37 @@ export function ProjectSettings({
               <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">{cloneMessage}</p>
             )}
           </div>
+        </section>
+      )}
+
+      {isOwner && (
+        <section className="rounded-lg border border-red-200 bg-red-50/40 p-4 shadow-sm dark:border-red-900/50 dark:bg-red-500/5">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-red-700 dark:text-red-400">
+            <AlertTriangle className="h-4 w-4" />
+            Danger zone
+          </h2>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Deleting <span className="font-medium">{projectName}</span> permanently removes all
+            its phases, tasks, issues, and team access. This can&apos;t be undone.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <input
+              value={confirmName}
+              onChange={(e) => setConfirmName(e.target.value)}
+              placeholder={`Type "${projectName}" to confirm`}
+              className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+            />
+            <button
+              type="button"
+              disabled={confirmName !== projectName || deletePending}
+              onClick={handleDelete}
+              className="flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {deletePending ? "Deleting..." : "Delete this project"}
+            </button>
+          </div>
+          {deleteError && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{deleteError}</p>}
         </section>
       )}
     </div>

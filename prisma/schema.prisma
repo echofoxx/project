@@ -47,6 +47,16 @@ enum TaskPriority {
   URGENT
 }
 
+enum NotificationType {
+  MEMBER_ADDED
+  MEMBER_REMOVED
+  MEMBER_ROLE_CHANGED
+  TASK_STATUS_CHANGED
+  ISSUE_CREATED
+  ISSUE_RESOLVED
+  PROJECT_DELETED
+}
+
 model User {
   id             String          @id @default(cuid())
   name           String
@@ -57,26 +67,74 @@ model User {
   assignedTasks  Task[]          @relation("TaskAssignee")
   ownedProjects  Project[]       @relation("ProjectOwner")
   taskNotes      TaskNote[]      @relation("TaskNoteAuthor")
+  notifications  Notification[]
+  apiTokens      ApiToken[]      @relation("ApiTokenCreator")
 }
 
 model Project {
-  id              String          @id @default(cuid())
-  name            String
-  type            ProjectType
-  description     String?
-  status          ProjectStatus   @default(PLANNING)
-  startDate       DateTime?
-  endDate         DateTime?
-  lessonsLearned  String?
-  ownerId         String
-  owner           User            @relation("ProjectOwner", fields: [ownerId], references: [id])
-  members         ProjectMember[]
-  phases          Phase[]
-  tasks           Task[]
-  issues          Issue[]
-  clonedFromId    String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id                  String               @id @default(cuid())
+  name                String
+  type                ProjectType
+  description         String?
+  status              ProjectStatus        @default(PLANNING)
+  startDate           DateTime?
+  endDate             DateTime?
+  lessonsLearned      String?
+  ownerId             String
+  owner               User                 @relation("ProjectOwner", fields: [ownerId], references: [id])
+  members             ProjectMember[]
+  phases              Phase[]
+  tasks               Task[]
+  issues              Issue[]
+  apiTokens           ApiToken[]
+  sharePointConnection SharePointConnection?
+  clonedFromId        String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model Notification {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String?
+  projectName String?
+  type        NotificationType
+  message     String
+  link        String?
+  readAt      DateTime?
+  createdAt   DateTime          @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+}
+
+model ApiToken {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  tokenHash   String    @unique
+  tokenPrefix String
+  createdById String
+  createdBy   User      @relation("ApiTokenCreator", fields: [createdById], references: [id])
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model SharePointConnection {
+  id           String   @id @default(cuid())
+  projectId    String   @unique
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tenantId     String
+  clientId     String
+  clientSecret String
+  siteUrl      String
+  listName     String
+  lastSyncAt   DateTime?
+  lastSyncError String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model ProjectMember {

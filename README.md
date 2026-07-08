@@ -39,7 +39,17 @@ the same data, so a change in one view shows up everywhere else.
   grouped by owner)
 
 **Collaboration & data**
-- **Multi-user projects** with roles (Owner / Editor / Viewer)
+- **Multi-user projects** with roles (Owner / Editor / Viewer) — owners can
+  invite by email with a chosen role, change a member's role, or remove them
+- **Delete a project** — an owner-only, confirm-by-typing-the-name action
+  that cascades to its phases, tasks, and issues
+- **In-app notifications** — a bell in the nav with an unread count for
+  activity on shared projects (members added/removed, role changes, task
+  status changes, issues logged/resolved)
+- **Share project data externally** — mint a per-project API token and pull
+  the project's data (`GET /api/external/projects/:id`) from another
+  instance of this app or any external tool, or push tasks to a SharePoint
+  list via Microsoft Graph
 - **CSV / JSON export & import** — take the plan offline and bring changes
   back, matched by WBS code so edits merge instead of duplicating
 - **Complete → reuse as template** — turn a finished project into a starter
@@ -153,12 +163,17 @@ kickoff.
 - [x] Automated test suite (Vitest) and Docker deployment
 - [x] Installable PWA — manifest, service worker with an offline fallback
       page, and a swipeable Kanban board on phone-sized screens
+- [x] Team management — role-based invites (Owner/Editor/Viewer), remove
+      members, change roles
+- [x] Delete a project (with a confirmation step)
+- [x] In-app notifications for project activity (members, roles, task
+      status, issues) with a bell/unread count in the nav
+- [x] API tokens for sharing project data with another instance, plus a
+      SharePoint list sync integration via Microsoft Graph
 
 **Planned**
 - [ ] **Proper team invites** — invite by email without requiring the
       invitee to already have an account (pending invite → accept → join)
-- [ ] **Notifications / activity feed** — who changed what, tasks assigned
-      to you
 - [ ] **Production hardening** — rate limiting on auth endpoints, structured
       logging, broader test coverage on the route handlers
 - [ ] **Mobile-first WBS and Gantt views** — the table and timeline still

@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
 const PUBLIC_PATHS = ["/", "/sign-in", "/sign-up", "/offline", "/manifest.webmanifest", "/sw.js"];
-const PUBLIC_PREFIXES = ["/api/auth", "/icons/"];
+// /api/external is authenticated separately via a per-project bearer token
+// (see requireApiToken), not the browser session this proxy checks for.
+const PUBLIC_PREFIXES = ["/api/auth", "/icons/", "/api/external"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;

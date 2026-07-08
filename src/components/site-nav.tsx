@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LayoutGrid, LogOut } from "lucide-react";
 import { signOut } from "@/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationBell } from "@/components/notification-bell";
 
 export function SiteNav({
   user,
@@ -29,6 +30,7 @@ export function SiteNav({
               <LayoutGrid className="h-4 w-4" />
               Projects
             </Link>
+            <NotificationBell />
             <ThemeToggle />
             <span className="hidden items-center gap-2 text-sm text-slate-500 sm:flex dark:text-slate-400">
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireProjectAccess } from "@/lib/authz";
 import { apiErrorResponse } from "@/lib/api-error";
 import { computeDerivedTaskFields, toDate } from "@/lib/task-update";
+import { notifyProjectMembers } from "@/lib/notify";
 
 const updateSchema = z.object({
   status: z.enum(["BACKLOG", "IN_PROGRESS", "REVIEW", "DONE"]).optional(),
@@ -29,7 +30,7 @@ export async function PATCH(
   try {
     const { id } = await ctx.params;
     const task = await prisma.task.findUniqueOrThrow({ where: { id } });
-    await requireProjectAccess(task.projectId, "EDITOR");
+    const { user } = await requireProjectAccess(task.projectId, "EDITOR");
 
     const body = updateSchema.parse(await request.json());
     const derived = computeDerivedTaskFields(task, body, new Date());
@@ -44,6 +45,23 @@ export async function PATCH(
       },
       include: { assignee: { select: { id: true, name: true, email: true } } },
     });
+
+    if (body.status && body.status !== task.status) {
+      const project = await prisma.project.findUnique({
+        where: { id: task.projectId },
+        select: { name: true },
+      });
+      if (project) {
+        await notifyProjectMembers({
+          projectId: task.projectId,
+          projectName: project.name,
+          type: "TASK_STATUS_CHANGED",
+          message: `${updated.wbsCode} ${updated.name} moved to ${body.status.replace("_", " ").toLowerCase()} in "${project.name}".`,
+          link: `/projects/${task.projectId}/tasks/${task.id}`,
+          excludeUserId: user.id,
+        });
+      }
+    }
 
     return NextResponse.json({ task: updated });
   } catch (err) {
