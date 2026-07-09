@@ -22,8 +22,10 @@ the same data, so a change in one view shows up everywhere else.
 **Planning**
 - **Project-type wizard** — Software, Home, Auto, Event, or Custom, each with
   a starter set of phases, milestones, and tasks
-- **AI-assisted kickoff** — describe the project in a sentence and let Claude
-  draft (or refine) the phase/task tree
+- **AI-assisted kickoff** — describe the project in a sentence and let AI
+  draft (or refine) the phase/task tree. Uses Claude by default, or a local
+  [Ollama](https://ollama.com) model if you'd rather not send data to the
+  cloud or need to work offline (see [Configuration](#configuration))
 - **Work breakdown structure (WBS)** — hierarchical, inline-editable task
   list with phases, owners, dates, and percent complete
 
@@ -99,13 +101,32 @@ All configuration is via environment variables, set in `.env` (see
 |---|---|---|
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | No (defaults provided) | Credentials for the Postgres container |
 | `AUTH_SECRET` | **Yes** | Session encryption key for NextAuth |
-| `ANTHROPIC_API_KEY` | No | Enables the AI-assisted project kickoff |
+| `ANTHROPIC_API_KEY` | No | Enables the AI-assisted project kickoff via Claude |
+| `OLLAMA_BASE_URL` | No | Enables the AI-assisted kickoff via a local [Ollama](https://ollama.com) model instead of Claude |
+| `OLLAMA_MODEL` | No (defaults to `llama3.1`) | Which pulled Ollama model to use |
+| `AI_PROVIDER` | No | Force `anthropic` or `ollama` when both are configured (Anthropic wins by default) |
 | `APP_PORT` | No (defaults to 3000) | Host port the app is exposed on |
 
 If you put the app behind a reverse proxy on a different host/port than
 `localhost:3000`, no extra configuration is needed — `docker-compose.yml`
 already sets `AUTH_TRUST_HOST=true`, which is required for NextAuth to accept
 requests in a self-hosted (non-Vercel) production deployment.
+
+#### Using a local model instead of Claude
+
+The AI-assisted kickoff works entirely offline with
+[Ollama](https://ollama.com), so no API key or internet access is required:
+
+```bash
+# with Docker — starts an Ollama container alongside the app
+docker compose --profile ollama up --build
+docker compose exec ollama ollama pull llama3.1   # first time only
+```
+
+Then set `OLLAMA_BASE_URL=http://ollama:11434` in `.env` (or
+`http://localhost:11434` if running Ollama outside Docker) and restart. If
+`ANTHROPIC_API_KEY` is also set, Anthropic is used by default — set
+`AI_PROVIDER=ollama` to force the local model instead.
 
 ## Running locally without Docker
 
