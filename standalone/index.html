@@ -603,6 +603,7 @@ function ic(name, cls) {
     check: '<path d="M20 6 9 17l-5-5"/>',
     square: '<rect x="3" y="3" width="18" height="18" rx="2"/>',
     download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+    upload: '<path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/>',
     printer: '<path d="M6 9V2h12v7"/><rect x="4" y="9" width="16" height="8" rx="1"/><path d="M6 17v5h12v-5"/>',
     bug: '<rect x="8" y="7" width="8" height="12" rx="4"/><path d="M12 7V4M9 4l1.5 2M15 4l-1.5 2M4 12h4M16 12h4M5 18l3-2M19 18l-3-2M5 8l3 1M19 8l-3 1"/>',
     calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
@@ -713,7 +714,32 @@ function projectCardHtml(p) {
 
 /* ============================== New project ============================== */
 var newProjectState = { type: "SOFTWARE" };
+function previewHtml(type) {
+  var phases = TEMPLATES[type] || TEMPLATES.CUSTOM;
+  var taskCount = phases.reduce(function (n, ph) { return n + ph.tasks.length; }, 0);
+  if (!taskCount) {
+    return '<p class="muted text-xs">Blank project — no starter tasks. You can add phases and tasks after creating it.</p>';
+  }
+  return phases.map(function (ph, pi) {
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--border);">' +
+      '<div class="flex items-center justify-between">' +
+      '<span style="font-weight:600;font-size:13px;">' + (pi + 1) + ". " + esc(ph.name) + "</span>" +
+      '<span class="muted2 text-xs">' + ph.tasks.length + (ph.tasks.length === 1 ? " task" : " tasks") + "</span>" +
+      "</div>" +
+      '<ul style="margin-top:4px;padding-left:0;list-style:none;">' +
+      ph.tasks.map(function (t, ti) {
+        return '<li class="flex items-center gap-2 text-xs muted" style="padding:2px 0;">' +
+          '<span class="muted2" style="min-width:28px;">' + (pi + 1) + "." + (ti + 1) + "</span>" +
+          "<span>" + esc(t[0]) + "</span>" +
+          (t[3] ? '<span class="badge badge-amber">' + ic("diamond") + " milestone</span>" : "") +
+          "</li>";
+      }).join("") +
+      "</ul></div>";
+  }).join("");
+}
 function viewNewProject() {
+  var phases = TEMPLATES[newProjectState.type] || TEMPLATES.CUSTOM;
+  var taskCount = phases.reduce(function (n, ph) { return n + ph.tasks.length; }, 0);
   return '<a href="#/" class="muted text-xs flex items-center gap-2" style="width:fit-content;">' + ic("arrowLeft") + ' All projects</a>' +
     '<h1 style="font-size:22px;font-weight:700;margin-top:10px;">Start a new project</h1>' +
     '<p class="muted mt-1">Pick a project type to pre-populate phases, milestones, and starter tasks.</p>' +
@@ -725,13 +751,22 @@ function viewNewProject() {
       return '<button type="button" class="type-card' + (t === newProjectState.type ? " selected" : "") + '" data-type="' + t + '">' + TYPE_LABELS[t] + "</button>";
     }).join("") + "</div></div>" +
     '<button class="btn btn-primary mt-4" id="npSubmit">' + ic("plus") + " Create project</button>" +
-    "</div></div>";
+    "</div></div>" +
+    '<div class="card mt-4" style="max-width:640px;">' +
+    '<div class="card-head"><span id="npPreviewTitle">Preview: ' + phases.length + " phase" + (phases.length === 1 ? "" : "s") + ", " + taskCount + " task" + (taskCount === 1 ? "" : "s") + "</span></div>" +
+    '<div class="card-body" id="npPreview" style="max-height:340px;overflow-y:auto;">' + previewHtml(newProjectState.type) + "</div>" +
+    "</div>";
 }
 function bindNewProjectHandlers() {
   document.querySelectorAll("#npTypes .type-card").forEach(function (btn) {
     btn.onclick = function () {
       newProjectState.type = btn.getAttribute("data-type");
       document.querySelectorAll("#npTypes .type-card").forEach(function (b) { b.classList.toggle("selected", b === btn); });
+      var phases = TEMPLATES[newProjectState.type] || TEMPLATES.CUSTOM;
+      var taskCount = phases.reduce(function (n, ph) { return n + ph.tasks.length; }, 0);
+      document.getElementById("npPreviewTitle").textContent =
+        "Preview: " + phases.length + " phase" + (phases.length === 1 ? "" : "s") + ", " + taskCount + " task" + (taskCount === 1 ? "" : "s");
+      document.getElementById("npPreview").innerHTML = previewHtml(newProjectState.type);
     };
   });
   document.getElementById("npSubmit").onclick = function () {
@@ -1303,7 +1338,14 @@ function inlineMd(text) {
 
 /* ============================== Settings ============================== */
 function viewSettings(project) {
-  return '<div class="card"><div class="card-head">' + ic("gear") + " Project</div><div class=\"card-body\">" +
+  return '<div class="card"><div class="card-head">' + ic("download") + " Export &amp; import</div><div class=\"card-body\">" +
+    '<p class="muted text-xs">Export your plan to a JSON file to back it up or move it to another browser, then import it back — tasks are matched by WBS code so edits merge instead of duplicating.</p>' +
+    '<div class="flex gap-2 mt-3" style="flex-wrap:wrap;">' +
+    '<button class="btn btn-secondary" onclick="exportProjectJson(\'' + project.id + '\')">' + ic("download") + " Export JSON</button>" +
+    '<button class="btn btn-secondary" onclick="document.getElementById(\'npImportInput\').click()">' + ic("upload") + " Import JSON</button>" +
+    '<input type="file" id="npImportInput" accept=".json" style="display:none" onchange="handleImportJsonChange(\'' + project.id + "', this)\" />" +
+    "</div></div></div>" +
+    '<div class="card mt-3"><div class="card-head">' + ic("gear") + " Project</div><div class=\"card-body\">" +
     '<label class="small">Name</label><input value="' + esc(project.name) + '" onchange="project_(\'' + project.id + '\').name=this.value;saveDB();renderApp();" />' +
     '<div class="mt-3"><label class="small">Description</label><textarea rows="2" onchange="project_(\'' + project.id + '\').description=this.value;saveDB();">' + esc(project.description || "") + "</textarea></div>" +
     '<div class="grid" style="grid-template-columns:1fr 1fr 1fr;"><div class="mt-3"><label class="small">Status</label><select onchange="project_(\'' + project.id + '\').status=this.value;saveDB();renderApp();">' +
@@ -1325,6 +1367,109 @@ function removeMember(projectId, memberId) {
   p.members = p.members.filter(function (m) { return m.id !== memberId; });
   allTasks(p).forEach(function (t) { if (t.assigneeId === memberId) t.assigneeId = null; });
   saveDB(); renderApp();
+}
+
+/* ============================== JSON export / import ============================== */
+function exportProjectJson(projectId) {
+  var project = getProject(projectId);
+  var data = {
+    name: project.name, type: project.type, description: project.description || "",
+    status: project.status, startDate: project.startDate, endDate: project.endDate,
+    phases: project.phases.map(function (phase) {
+      return {
+        name: phase.name, wbsCode: phase.wbsCode,
+        tasks: phase.tasks.filter(function (t) { return !t.parentTaskId; }).map(function (t) {
+          return {
+            wbsCode: t.wbsCode, name: t.name, description: t.description || "",
+            status: t.status, priority: t.priority, isMilestone: t.isMilestone,
+            assigneeName: t.assigneeId ? memberName(project, t.assigneeId) : null,
+            plannedStart: t.plannedStart, plannedEnd: t.plannedEnd,
+            percentComplete: t.percentComplete, estimatedHours: t.estimatedHours,
+          };
+        }),
+      };
+    }),
+  };
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function handleImportJsonChange(projectId, inputEl) {
+  var file = inputEl.files && inputEl.files[0];
+  inputEl.value = "";
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function () {
+    var data;
+    try {
+      data = JSON.parse(String(reader.result));
+    } catch (e) {
+      alert("Could not import that file: it isn't valid JSON.");
+      return;
+    }
+    if (!data || !Array.isArray(data.phases)) {
+      alert("Could not import that file: it doesn't look like an exported project.");
+      return;
+    }
+    var result = importProjectJson(projectId, data);
+    renderApp();
+    alert("Imported: " + result.created + " created, " + result.updated + " updated.");
+  };
+  reader.readAsText(file);
+}
+function importProjectJson(projectId, data) {
+  var project = getProject(projectId);
+  var created = 0, updated = 0;
+  (data.phases || []).forEach(function (phaseData) {
+    var phase = project.phases.find(function (ph) { return ph.name === phaseData.name; });
+    if (!phase) {
+      phase = { id: uid(), name: phaseData.name || "Imported Tasks", wbsCode: String(project.phases.length + 1), order: project.phases.length, tasks: [] };
+      project.phases.push(phase);
+    }
+    (phaseData.tasks || []).forEach(function (taskData) {
+      if (!taskData || !taskData.name) return;
+      var existing = taskData.wbsCode
+        ? allTasks(project).find(function (t) { return t.wbsCode === taskData.wbsCode; })
+        : null;
+      var assignee = null;
+      if (taskData.assigneeName) {
+        assignee = project.members.find(function (m) { return m.name === taskData.assigneeName; });
+        if (!assignee) { assignee = { id: uid(), name: taskData.assigneeName }; project.members.push(assignee); }
+      }
+      if (existing) {
+        existing.name = taskData.name;
+        existing.description = taskData.description != null ? taskData.description : existing.description;
+        existing.status = taskData.status || existing.status;
+        existing.priority = taskData.priority || existing.priority;
+        existing.isMilestone = !!taskData.isMilestone;
+        existing.plannedStart = taskData.plannedStart || existing.plannedStart;
+        existing.plannedEnd = taskData.plannedEnd || existing.plannedEnd;
+        existing.percentComplete = taskData.percentComplete != null ? Math.max(0, Math.min(100, taskData.percentComplete)) : existing.percentComplete;
+        existing.estimatedHours = taskData.estimatedHours != null ? taskData.estimatedHours : existing.estimatedHours;
+        if (assignee) existing.assigneeId = assignee.id;
+        updated++;
+      } else {
+        var wbsCode = taskData.wbsCode || (phase.wbsCode + "." + (phase.tasks.length + 1));
+        phase.tasks.push({
+          id: uid(), phaseId: phase.id, parentTaskId: null,
+          name: taskData.name, wbsCode: wbsCode,
+          description: taskData.description || "", status: taskData.status || "BACKLOG",
+          priority: taskData.priority || "MEDIUM", isMilestone: !!taskData.isMilestone,
+          plannedStart: taskData.plannedStart || null, plannedEnd: taskData.plannedEnd || null,
+          actualStart: null, actualEnd: null,
+          percentComplete: taskData.percentComplete != null ? Math.max(0, Math.min(100, taskData.percentComplete)) : 0,
+          estimatedHours: taskData.estimatedHours != null ? taskData.estimatedHours : null,
+          assigneeId: assignee ? assignee.id : null, order: phase.tasks.length, dependsOn: [], notes: [],
+        });
+        created++;
+      }
+    });
+  });
+  touchProject(project);
+  return { created: created, updated: updated };
 }
 
 /* ============================== Init ============================== */

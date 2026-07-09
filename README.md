@@ -151,12 +151,14 @@ file directly in a browser and it works, storing everything in that browser's
 the full app above.
 
 It covers most of the same ground: project templates (Software/Home/Auto/
-Event/Custom), Kanban board with drag-and-drop, WBS with dependencies, Gantt
-timeline with critical-path highlighting, issue log with aging buckets, and
-the full report suite (KPI drill-down, burnup chart, critical path, cycle
-time, CSV export). It intentionally leaves out things that need a real
-backend: multi-user accounts and roles, file attachments, and the AI-assisted
-kickoff.
+Event/Custom) with a live task preview as you pick a type, Kanban board with
+drag-and-drop, WBS with dependencies, Gantt timeline with critical-path
+highlighting, issue log with aging buckets, the full report suite (KPI
+drill-down, burnup chart, critical path, cycle time, CSV export), and JSON
+export/import per project (matched by WBS code, so re-importing merges
+edits instead of duplicating tasks). It intentionally leaves out things that
+need a real backend: multi-user accounts and roles, file attachments, and
+the AI-assisted kickoff.
 
 ## Scripts
 
